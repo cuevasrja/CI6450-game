@@ -86,13 +86,14 @@ class KinematicSeek:
         self.target: Static = target
         self.max_speed: float = max_speed
 
-    def get_steering(self) -> KinematicSteeringOutput:
+    @staticmethod
+    def get_steering() -> KinematicSteeringOutput:
         steering: KinematicSteeringOutput = KinematicSteeringOutput()
 
-        steering.velocity = self.target.position - self.character.position
-        steering.velocity = steering.velocity.normalize() * self.max_speed
+        steering.velocity = KinematicSeek.target.position - KinematicSeek.character.position
+        steering.velocity = steering.velocity.normalize() * KinematicSeek.max_speed
 
-        self.character.orientation = new_orientation(self.character.orientation, steering.velocity)
+        KinematicSeek.character.orientation = new_orientation(KinematicSeek.character.orientation, steering.velocity)
 
         steering.rotation = 0
         return steering
