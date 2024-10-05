@@ -1,15 +1,21 @@
 # Example file showing a circle moving on screen
+import math
+from typing import List
 import pygame
+from utils.trigonometry import atan2, normalize
 
 # pygame setup
 pygame.init()
-screen = pygame.display.set_mode((1280, 720))
-clock = pygame.time.Clock()
-running = True
-dt = 0
-orientation = 'left'
+screen: pygame.Surface = pygame.display.set_mode((1280, 720))
+clock: pygame.time.Clock = pygame.time.Clock()
+running: bool = True
+dt: int = 0
+hist_pos: List[float] = [0, 0]
+orientation: float = 0
 
 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
+
+
 
 while running:
     # poll for events
@@ -21,31 +27,29 @@ while running:
     # fill the screen with a color to wipe away anything from last frame
     screen.fill("purple")
 
-    # pygame.draw.circle(screen, "red", player_pos, 40)
-    # pygame.draw.rect(screen, "red", pygame.Rect(player_pos.x, player_pos.y, 40, 40))
-    # pygame.draw.polygon(screen, "red", [(player_pos.x, player_pos.y), (player_pos.x + 40, player_pos.y + 20), (player_pos.x + 40, player_pos.y - 20)])
-    if orientation == 'up':
-        pygame.draw.polygon(screen, "red", [(player_pos.x, player_pos.y), (player_pos.x + 20, player_pos.y + 40), (player_pos.x - 20, player_pos.y + 40)])
-    elif orientation == 'down':
-        pygame.draw.polygon(screen, "red", [(player_pos.x, player_pos.y), (player_pos.x + 20, player_pos.y - 40), (player_pos.x - 20, player_pos.y - 40)])
-    elif orientation == 'left':
-        pygame.draw.polygon(screen, "red", [(player_pos.x, player_pos.y), (player_pos.x + 40, player_pos.y + 20), (player_pos.x + 40, player_pos.y - 20)])
-    else:
-        pygame.draw.polygon(screen, "red", [(player_pos.x, player_pos.y), (player_pos.x - 40, player_pos.y + 20), (player_pos.x - 40, player_pos.y - 20)])
+    pygame.draw.polygon(screen, "red", [(player_pos.x + math.cos(orientation) * 20, player_pos.y + math.sin(orientation) * 20), (player_pos.x + math.cos(orientation + 2.5) * 20, player_pos.y + math.sin(orientation + 2.5) * 20), (player_pos.x + math.cos(orientation - 2.5) * 20, player_pos.y + math.sin(orientation - 2.5) * 20)])
 
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_w]:
-        player_pos.y -= 300 * dt
-        orientation = 'up'
-    if keys[pygame.K_s]:
-        player_pos.y += 300 * dt
-        orientation = 'down'
-    if keys[pygame.K_a]:
-        player_pos.x -= 300 * dt
-        orientation = 'left'
     if keys[pygame.K_d]:
         player_pos.x += 300 * dt
-        orientation = 'right'
+        hist_pos[0] += 300 *dt
+
+    if keys[pygame.K_w]:
+        player_pos.y -= 300 * dt
+        hist_pos[1] -= 300 * dt
+
+    if keys[pygame.K_a]:
+        player_pos.x -= 300 * dt
+        hist_pos[0] -= 300 * dt
+        
+    if keys[pygame.K_s]:
+        player_pos.y += 300 * dt
+        hist_pos[1] += 300 * dt
+
+    orientation = atan2(hist_pos[0], hist_pos[1])
+
+    if hist_pos[0] >= 10000 or hist_pos[1] >= 10000:
+        hist_pos = normalize(hist_pos[0], hist_pos[1])
 
     if player_pos.y > screen.get_height():
         player_pos.y = 0

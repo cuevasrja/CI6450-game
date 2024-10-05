@@ -1,0 +1,30 @@
+import math
+import random
+from typing import List
+from utils.face import Face
+from utils.physics import Kinematic, SteeringOutput
+
+class Wander(Face):
+    def __init__(self, character: Kinematic, target: Kinematic, maxAngularAcceleration: float, maxRotation: float, targetRadius: float, slowRadius: float, wanderOffset: float, wanderRadius: float, wanderRate: float, wanderOrientation: float, maxAcceleration: float):
+        super().__init__(character, target, maxAngularAcceleration, maxRotation, targetRadius, slowRadius)
+        self.wanderOffset: float = wanderOffset
+        self.wanderRadius: float = wanderRadius
+        self.wanderRate: float = wanderRate
+        self.wanderOrientation: float = wanderOrientation
+        self.maxAcceleration: float = maxAcceleration
+
+    def get_steering(self) -> SteeringOutput:
+        self.wanderOrientation += random.uniform(-self.wanderRate, self.wanderRate)
+
+        targetOrientation: float = self.wanderOrientation + self.character.orientation
+
+        target: List[float] = [self.character.position[0] + self.wanderOffset * math.cos(self.character.orientation), self.character.position[1] + self.wanderOffset * math.sin(self.character.orientation)]
+        
+        target[0] += self.wanderRadius * math.cos(targetOrientation)
+        target[1] += self.wanderRadius * math.sin(targetOrientation)
+
+        result: SteeringOutput = super().get_steering(Kinematic(target, self.character.orientation, [0, 0], 0, 0))
+
+        result.linear = [self.maxAcceleration * math.cos(self.character.orientation), self.maxAcceleration * math.sin(self.character.orientation)]
+
+        return result
