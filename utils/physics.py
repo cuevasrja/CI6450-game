@@ -1,5 +1,7 @@
-from typing import Tuple
-from pygame import Vector2
+import math
+import random
+from typing import List, Tuple
+from pygame import Vector2, Surface
 from utils.trigonometry import atan2, magnitude, normalize
 
 class Static:
@@ -46,9 +48,11 @@ class Kinematic:
     def set_orientation(self, angle: float):
         self.orientation = angle
 
-    def set_velocity(self, x: int, y: int):
-        self.velocity.x = x
-        self.velocity.y = y
+    def set_velocity(self, x: int|None = None, y: int|None = None):
+        if x is not None:
+            self.velocity.x = x
+        if y is not None:
+            self.velocity.y = y
 
     def set_angular_velocity(self, angular_velocity: float):
         self.angular_velocity = angular_velocity
@@ -87,3 +91,21 @@ class Kinematic:
 
     def copy(self) -> 'Kinematic':
         return Kinematic(self.position, self.orientation, self.velocity, self.angular_velocity)
+
+def random_npc(screen: Surface) -> Kinematic:
+    random_x: int = random.randint(0, screen.get_width())
+    random_y: int = random.randint(0, screen.get_height())
+    random_orientation: float = random.uniform(0, 2 * math.pi)
+    return Kinematic(Vector2(random_x, random_y), random_orientation)
+
+def list_of_random_npcs(screen: Surface, n: int) -> List[Kinematic]:
+    return [random_npc(screen) for _ in range(n)]
+
+def center_npc(screen: Surface) -> Kinematic:
+    pos_x: int = screen.get_width()//2 + random.randint(-50, 50)
+    pos_y: int = screen.get_height()//2 + random.randint(-50, 50)
+    random_orientation: float = random.uniform(0, 2 * math.pi)
+    return Kinematic(Vector2(pos_x, pos_y), random_orientation)
+
+def list_of_center_npcs(screen: Surface, n: int) -> List[Kinematic]:
+    return [center_npc(screen) for _ in range(n)]

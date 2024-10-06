@@ -13,7 +13,7 @@ class KinematicSeek:
         steering: KinematicSteeringOutput = KinematicSteeringOutput()
 
         steering.velocity = self.target.position - self.character.position
-        steering.velocity = steering.velocity.normalize() * self.max_speed
+        steering.velocity = normalize(steering.velocity) * self.max_speed
 
         self.character.orientation = new_orientation(self.character.orientation, steering.velocity)
 
@@ -30,7 +30,7 @@ class KinematicFlee: # This is the same as KinematicSeek, but with the direction
         steering: KinematicSteeringOutput = KinematicSteeringOutput()
 
         steering.velocity = self.character.position - self.target.position
-        steering.velocity = steering.velocity.normalize() * self.max_speed
+        steering.velocity = normalize(steering.velocity) * self.max_speed
 
         self.character.orientation = new_orientation(self.character.orientation, steering.velocity)
 
@@ -47,7 +47,7 @@ class KinematicArrive:
     # The time to target constant.
     timeToTarget: float = 0.25
 
-    def getSteering(self) -> KinematicSteeringOutput:
+    def get_steering(self) -> KinematicSteeringOutput:
         result: KinematicSteeringOutput = KinematicSteeringOutput()
 
         # Get the direction to the target.
