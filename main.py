@@ -4,6 +4,7 @@ from typing import List
 import pygame
 from utils.follow_path import FollowPath
 from utils.look_were_are_you_going import LookWhereYoureGoing
+from utils.game import check_border, key_checker, show_menu
 from utils.wander import Wander
 from utils.align import Align
 from utils.arrive import Arrive
@@ -15,6 +16,8 @@ from utils.physics import Kinematic, list_of_center_npcs, list_of_random_npcs
 from utils.seek import Seek
 from utils.trigonometry import atan2, normalize
 from utils.velocity_match import VelocityMatch
+
+option = show_menu()
 
 # pygame setup
 pygame.init()
@@ -28,28 +31,9 @@ dt: int = 0
 hist_pos: pygame.Vector2 = pygame.Vector2(0, 0)
 const_velocity: float = 300
 
-# player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
-
 player: Kinematic = Kinematic(position=pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2))
 n_NPCs: int = 1
 NPCs: List[Kinematic] = []
-
-print("\033[1;93mBienvenido al simulador de algoritmos de movimiento\033[0m")
-print("\033[1;92mSeleccione una opción: \033[0m")
-print("1. Kinematic Arrive")
-print("2. Kinematic Flee")
-print("3. Kinematic Wandering")
-print("4. Dynamic Seek")
-print("5. Dynamic Flee")
-print("6. Dynamic Arrive")
-print("7. Align")
-print("8. Velocity Match")
-print("9. Face")
-print("10. Look Where You're Going")
-print("11. Dynamic Wander")
-print("12. Path Following")
-
-option = int(input("\033[1;92mSeleccione una opción: \033[0m"))
 
 search = None
 
@@ -72,7 +56,7 @@ elif option == 6:
     NPCs = list_of_random_npcs(screen, 1)
     search: List[Arrive] = [Arrive(NPC, player, 100, random.randint(50, const_velocity), 10, 100) for NPC in NPCs]
 elif option == 7:
-    NPCs = list_of_random_npcs(screen, 1)
+    NPCs = list_of_random_npcs(screen, 3)
     search: List[Align] = [Align(NPC, player, random.randint(10, const_velocity), 3, 1, 0.1) for NPC in NPCs]
 elif option == 8:
     NPCs = list_of_random_npcs(screen, 1)
@@ -119,52 +103,18 @@ while running:
     for NPC in NPCs:
         draw_polygon_by_class(screen, npc_color, NPC)
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_d]:
-        player.add_position(x=const_velocity * dt)
-        hist_pos.x += const_velocity * dt
-        player.set_velocity(x=const_velocity)
-
-    if keys[pygame.K_w]:
-        player.add_position(y=-const_velocity * dt)
-        hist_pos.y -= const_velocity * dt
-        player.set_velocity(y=-const_velocity)
-
-    if keys[pygame.K_a]:
-        player.add_position(x=-const_velocity * dt)
-        hist_pos.x -= const_velocity * dt
-        player.set_velocity(x=-const_velocity)
-        
-    if keys[pygame.K_s]:
-        player.add_position(y=const_velocity * dt)
-        hist_pos.y += const_velocity * dt
-        player.set_velocity(y=const_velocity)
+    keys: pygame.key.ScancodeWrapper = pygame.key.get_pressed()
+    key_checker(keys, player, hist_pos, const_velocity, dt)
 
     player.set_orientation(atan2(hist_pos[0], hist_pos[1]))
 
     if hist_pos.x >= 10000 or hist_pos.y >= 10000:
         hist_pos = normalize(hist_pos.x, hist_pos.y)
 
-    if player.position.y > screen.get_height():
-        player.position.y = 0
-    elif player.position.y < 0:
-        player.position.y = screen.get_height()
-        
-    if player.position.x > screen.get_width():
-        player.position.x = 0
-    elif player.position.x < 0:
-        player.position.x = screen.get_width()
+    check_border(screen, player)
 
     for NPC in NPCs:
-        if NPC.position.y > screen.get_height() - 20:
-            NPC.position.y = screen.get_height() - 20
-        elif NPC.position.y < 20:
-            NPC.position.y = 20
-
-        if NPC.position.x > screen.get_width() - 20:
-            NPC.position.x = screen.get_width() - 20
-        elif NPC.position.x < 20:
-            NPC.position.x = 20
+        check_border(screen, NPC, 20)
 
     # flip() the display to put your work on screen
     pygame.display.flip()
