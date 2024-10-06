@@ -1,3 +1,4 @@
+from pygame import Vector2
 from utils.physics import Kinematic, SteeringOutput
 from utils.trigonometry import map_to_range
 
@@ -37,5 +38,6 @@ class Align:
         if abs(steering.angular) > self.maxAngularAcceleration:
             steering.angular = self.maxAngularAcceleration * steering.angular / abs(steering.angular)
 
-        steering.linear = (0, 0)
+        steering.linear = Vector2(0, 0)
         return steering
+    

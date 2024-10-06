@@ -1,4 +1,4 @@
-from typing import Tuple
+from pygame import Vector2
 from utils.physics import Kinematic, SteeringOutput
 from utils.seek import Seek
 from utils.trigonometry import atan2, magnitude, normalize
@@ -11,7 +11,7 @@ class Pursue(Seek):
         self.target: Kinematic = target
     
     def get_steering(self) -> SteeringOutput:
-        direction: Tuple[float, float] = (self.target.position[0] - self.character.position[0], self.target.position[1] - self.character.position[1])
+        direction: Vector2 = Vector2(self.target.position[0] - self.character.position[0], self.target.position[1] - self.character.position[1])
         distance: float = magnitude(direction)
         speed: float = magnitude(self.character.velocity)
 

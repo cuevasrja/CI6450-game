@@ -1,21 +1,20 @@
-from typing import List
+from pygame import Vector2
 from utils.align import Align
 from utils.physics import Kinematic, SteeringOutput
-from utils.trigonometry import atan2
-
+from utils.trigonometry import atan2, magnitude
 
 class Face(Align):
     def __init__(self, character: Kinematic, target: Kinematic, maxAngularAcceleration: float, maxRotation: float, targetRadius: float, slowRadius: float, timeToTarget: float = 0.1):
         super().__init__(character, target, maxAngularAcceleration, maxRotation, targetRadius, slowRadius, timeToTarget)
         self.target: Kinematic = target
 
-    def get_steering(self, explicit_target: Kinematic) -> SteeringOutput:
-        direction: List[float] = [self.target.position[0] - self.character.position[0], self.target.position[1] - self.character.position[1]]
+    def get_steering(self) -> SteeringOutput:
+        direction: Vector2 = Vector2(self.target.position.x - self.character.position.x, self.target.position.y - self.character.position.y)
 
-        if direction == [0, 0]:
+        if magnitude(direction) == 0:
             return self.target
         
-        super().target = explicit_target
-        super().target.orientation = atan2(-direction[0], direction[1])
+        self.target = self.target.copy()
+        self.target.orientation = atan2(-direction.x, direction.y)
 
         return super().get_steering()

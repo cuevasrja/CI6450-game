@@ -1,6 +1,6 @@
 import math
 import random
-from typing import List
+from pygame import Vector2
 from utils.face import Face
 from utils.physics import Kinematic, SteeringOutput
 
@@ -18,13 +18,13 @@ class Wander(Face):
 
         targetOrientation: float = self.wanderOrientation + self.character.orientation
 
-        target: List[float] = [self.character.position[0] + self.wanderOffset * math.cos(self.character.orientation), self.character.position[1] + self.wanderOffset * math.sin(self.character.orientation)]
+        target: Vector2 = Vector2(self.character.position.x + self.wanderOffset * math.cos(self.character.orientation), self.character.position.y + self.wanderOffset * math.sin(self.character.orientation))
         
-        target[0] += self.wanderRadius * math.cos(targetOrientation)
-        target[1] += self.wanderRadius * math.sin(targetOrientation)
+        target.x += self.wanderRadius * math.cos(targetOrientation)
+        target.y += self.wanderRadius * math.sin(targetOrientation)
 
-        result: SteeringOutput = super().get_steering(Kinematic(target, self.character.orientation, [0, 0], 0, 0))
+        result: SteeringOutput = super().get_steering()
 
-        result.linear = [self.maxAcceleration * math.cos(self.character.orientation), self.maxAcceleration * math.sin(self.character.orientation)]
+        result.linear = Vector2(self.maxAcceleration * math.cos(self.character.orientation), self.maxAcceleration * math.sin(self.character.orientation))
 
         return result

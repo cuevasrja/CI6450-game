@@ -1,9 +1,7 @@
-from typing import Tuple
-import pygame
 from utils.physics import Kinematic, Static, SteeringOutput
 from utils.trigonometry import atan2, normalize
 
-class Seek:
+class Flee:
     def __init__(self, character: Kinematic, target: Static, max_speed: float):
         self.character: Kinematic = character
         self.target: Static = target
@@ -12,7 +10,7 @@ class Seek:
     def get_steering(self) -> SteeringOutput:
         steering: SteeringOutput = SteeringOutput()
 
-        steering.linear = self.target.position - self.character.position
+        steering.linear = self.character.position - self.target.position
         steering.linear = normalize(steering.linear) * self.max_speed
 
         self.character.orientation = atan2(steering.linear.x, steering.linear.y)

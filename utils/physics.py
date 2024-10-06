@@ -1,10 +1,10 @@
 from typing import Tuple
-import pygame
+from pygame import Vector2
 from utils.trigonometry import atan2, magnitude, normalize
 
 class Static:
-    def __init__(self, position: Tuple[int, int] = (0, 0), orientation: float = 0):
-        self.position: Tuple[int, int] = position
+    def __init__(self, position: Vector2 = Vector2(0, 0), orientation: float = 0):
+        self.position: Vector2 = position
         self.orientation: float = orientation
 
     def set_position(self, x: int, y: int):
@@ -13,43 +13,53 @@ class Static:
     def set_orientation(self, angle: float):
         self.orientation = angle
 
-    def get_position(self) -> Tuple[int, int]:
+    def get_position(self) -> Vector2:
         return self.position
     
     def get_orientation(self) -> float:
         return self.orientation
+    
+    def copy(self) -> 'Static':
+        return Static(self.position, self.orientation)
 
 class SteeringOutput:
-    def __init__(self, linear: Tuple[int, int] = (0, 0), angular: float = 0):
-        self.linear: Tuple[int, int] = linear
+    def __init__(self, linear: Vector2 = Vector2(0, 0), angular: float = 0):
+        self.linear: Vector2 = linear
         self.angular: float = angular
 
+class KinematicSteeringOutput:
+    def __init__(self, velocity: Vector2 = Vector2(0, 0), rotation: float = 0):
+        self.velocity: Vector2 = velocity
+        self.rotation: float = rotation
+
 class Kinematic:
-    def __init__(self, position: Tuple[int, int] = (0, 0), orientation: float = 0, velocity: Tuple[int, int] = (0, 0), angular_velocity: float = 0):
-        self.position: Tuple[int, int] = position
+    def __init__(self, position: Vector2 = Vector2(0, 0), orientation: float = 0, velocity: Vector2 = Vector2(0, 0), angular_velocity: float = 0):
+        self.position: Vector2 = position
         self.orientation: float = orientation
-        self.velocity: Tuple[int, int] = velocity
+        self.velocity: Vector2 = velocity
         self.angular_velocity: float = angular_velocity
 
     def set_position(self, x: int, y: int):
-        self.position = (x, y)
+        self.position.x = x
+        self.position.y = y
 
     def set_orientation(self, angle: float):
         self.orientation = angle
 
     def set_velocity(self, x: int, y: int):
-        self.velocity = (x, y)
+        self.velocity.x = x
+        self.velocity.y = y
 
     def set_angular_velocity(self, angular_velocity: float):
         self.angular_velocity = angular_velocity
 
-    def get_position(self) -> Tuple[int, int]:
+    def get_position(self) -> Vector2:
         return self.position
     
     def get_orientation(self) -> float:
         return self.orientation
 
-    def get_velocity(self) -> Tuple[int, int]:
+    def get_velocity(self) -> Vector2:
         return self.velocity
     
     def get_angular_velocity(self) -> float:
@@ -62,12 +72,18 @@ class Kinematic:
         self.velocity += steering.linear * dt
         self.angular_velocity += steering.angular * dt
 
-    def update_with_max_speed(self, steering: SteeringOutput, dt: float, max_speed: float):
+    def update_with_max_speed(self, steering: KinematicSteeringOutput, dt: float, max_speed: float):
         self.position += self.velocity * dt
         self.orientation += self.angular_velocity * dt
 
-        self.velocity += steering.linear * dt
         if magnitude(self.velocity) > max_speed:
             self.velocity = normalize(self.velocity) * max_speed
 
-        self.angular_velocity += steering.angular * dt
+        self.angular_velocity += steering.rotation * dt
+
+    def add_position(self, x: int = 0, y: int = 0):
+        self.position.x += x
+        self.position.y += y
+
+    def copy(self) -> 'Kinematic':
+        return Kinematic(self.position, self.orientation, self.velocity, self.angular_velocity)

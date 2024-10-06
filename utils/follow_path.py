@@ -1,12 +1,12 @@
-from typing import List
+from pygame import Vector2
 from utils.physics import SteeringOutput
 from utils.seek import Seek
 
 class Path:
-    def get_param(self, position: List[float], current_param: float) -> float:
+    def get_param(self, position: Vector2, current_param: float) -> float:
         pass
 
-    def get_position(self, param: float) -> List[float]:
+    def get_position(self, param: float) -> Vector2:
         pass
 
 class FollowPath(Seek):
@@ -21,6 +21,6 @@ class FollowPath(Seek):
 
         target_param: float = current_param + self.path_offset
 
-        target_position: List[float] = self.path.get_position(target_param)
+        target_position: Vector2 = self.path.get_position(target_param)
 
         return super().get_steering()

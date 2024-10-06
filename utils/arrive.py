@@ -1,6 +1,7 @@
 from typing import Tuple
 from utils.physics import Kinematic, SteeringOutput
 from utils.trigonometry import magnitude, normalize
+from pygame import Vector2
 
 class Arrive:
     def __init__(self, character: Kinematic, target: Kinematic, max_acceleration: float, max_speed: float, target_radius: float, slow_radius: float, time_to_target: float = 0.1):
@@ -15,19 +16,20 @@ class Arrive:
     def get_steering(self) -> SteeringOutput:
         steering: SteeringOutput = SteeringOutput()
 
-        direction: Tuple[int, int] = self.target.position - self.character.position
+        direction: Vector2 = self.target.position - self.character.position
         distance: float = magnitude(direction)
 
         if distance < self.target_radius:
-            steering.linear = (0, 0)
+            steering.linear = Vector2(0, 0)
             return steering
 
+        target_speed: float
         if distance > self.slow_radius:
-            target_speed: float = self.max_speed
+            target_speed = self.max_speed
         else:
             target_speed = self.max_speed * distance / self.slow_radius
 
-        target_velocity: Tuple[int, int] = normalize(direction) * target_speed
+        target_velocity: Vector2 = normalize(direction) * target_speed
 
         steering.linear = target_velocity - self.character.velocity
         steering.linear = steering.linear / self.time_to_target

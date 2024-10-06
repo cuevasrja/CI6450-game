@@ -1,13 +1,7 @@
 import random
-from typing import Tuple
-import pygame
+from pygame import Vector2
 from utils.trigonometry import new_orientation, in_radius, magnitude, normalize, rotate_vector
-from utils.physics import Static
-
-class KinematicSteeringOutput:
-    def __init__(self, velocity: Tuple[int, int] = (0, 0), rotation: float = 0):
-        self.velocity: Tuple[int, int] = velocity
-        self.rotation: float = rotation
+from utils.physics import KinematicSteeringOutput, Static
 
 class KinematicSeek:
     def __init__(self, character: Static, target: Static, max_speed: float):
@@ -19,6 +13,23 @@ class KinematicSeek:
         steering: KinematicSteeringOutput = KinematicSteeringOutput()
 
         steering.velocity = self.target.position - self.character.position
+        steering.velocity = steering.velocity.normalize() * self.max_speed
+
+        self.character.orientation = new_orientation(self.character.orientation, steering.velocity)
+
+        steering.rotation = 0
+        return steering
+    
+class KinematicFlee: # This is the same as KinematicSeek, but with the direction reversed.
+    def __init__(self, character: Static, target: Static, max_speed: float):
+        self.character: Static = character
+        self.target: Static = target
+        self.max_speed: float = max_speed
+
+    def get_steering(self) -> KinematicSteeringOutput:
+        steering: KinematicSteeringOutput = KinematicSteeringOutput()
+
+        steering.velocity = self.character.position - self.target.position
         steering.velocity = steering.velocity.normalize() * self.max_speed
 
         self.character.orientation = new_orientation(self.character.orientation, steering.velocity)
@@ -43,7 +54,7 @@ class KinematicArrive:
         result.velocity = self.target.position - self.character.position
 
         if in_radius(result.velocity, self.satisfaction_radius):
-            result.velocity = (0, 0)
+            result.velocity = Vector2(0, 0)
             return result
 
         # If we are outside the satisfaction radius, calculate the target speed.
@@ -67,7 +78,7 @@ class KinematicWander:
     def get_steering(self) -> KinematicSteeringOutput:
         steering: KinematicSteeringOutput = KinematicSteeringOutput()
 
-        steering.velocity = (1, 0)
+        steering.velocity = Vector2(1, 0)
         steering.velocity = rotate_vector(steering.velocity, self.character.orientation)
         steering.velocity *= self.max_speed
 
