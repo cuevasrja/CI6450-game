@@ -1,3 +1,4 @@
+from typing import List
 import pygame
 from utils.physics import Kinematic
 
@@ -51,3 +52,19 @@ def key_checker(keys: pygame.key.ScancodeWrapper, player: Kinematic, hist_pos: p
         player.add_position(y=const_velocity * dt)
         hist_pos.y += const_velocity * dt
         player.set_velocity(y=const_velocity)
+
+    if not(keys[pygame.K_d] or keys[pygame.K_w] or keys[pygame.K_a] or keys[pygame.K_s]):
+        player.set_velocity(x=0, y=0)
+
+def create_square_path(screen: pygame.Surface, n_points: int = 4, border: float = 0.9) -> List[pygame.Vector2]:
+    width: int = screen.get_width()
+    height: int = screen.get_height()
+    padding_width: int = width * (1 - border) / 2
+    padding_height: int = height * (1 - border) / 2
+
+    return [
+        pygame.Vector2(padding_width, padding_height), 
+        pygame.Vector2(width - padding_width, padding_height), 
+        pygame.Vector2(width - padding_width, height - padding_height), 
+        pygame.Vector2(padding_width, height - padding_height)
+        ]

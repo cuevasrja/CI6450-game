@@ -1,10 +1,11 @@
 # Example file showing a circle moving on screen
+import math
 import random
 from typing import List
 import pygame
 from utils.follow_path import FollowPath
 from utils.look_were_are_you_going import LookWhereYoureGoing
-from utils.game import check_border, key_checker, show_menu
+from utils.game import check_border, create_square_path, key_checker, show_menu
 from utils.wander import Wander
 from utils.align import Align
 from utils.arrive import Arrive
@@ -30,8 +31,9 @@ running: bool = True
 dt: int = 0
 hist_pos: pygame.Vector2 = pygame.Vector2(0, 0)
 const_velocity: float = 300
+const_angular_velocity: float = math.pi/2
 
-player: Kinematic = Kinematic(position=pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2))
+player: Kinematic = Kinematic(position=pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2), angular_velocity=const_angular_velocity)
 n_NPCs: int = 1
 NPCs: List[Kinematic] = []
 
@@ -60,20 +62,20 @@ elif option == 7:
     search: List[Align] = [Align(NPC, player, random.randint(10, const_velocity), 3, 1, 0.1) for NPC in NPCs]
 elif option == 8:
     NPCs = list_of_random_npcs(screen, 1)
-    search: List[VelocityMatch] = [VelocityMatch(NPC, player, const_velocity) for NPC in NPCs]
+    search: List[VelocityMatch] = [VelocityMatch(NPC, player, 10000) for NPC in NPCs]
 elif option == 9: # Add 5 NPCs
     NPCs = list_of_random_npcs(screen, 5)
-    search: List[Face] = [Face(NPC, player, random.randint(0, 50), 3, 1, 0.1) for NPC in NPCs]
+    search: List[Face] = [Face(NPC, player, 50, 2*math.pi, 1, 0.1) for NPC in NPCs]
 elif option == 10:
     NPCs = list_of_random_npcs(screen, 1)
-    search: List[LookWhereYoureGoing] = [LookWhereYoureGoing(NPC, player, random.randint(10, const_velocity), 3, 1, 0.1) for NPC in NPCs]
+    search: List[LookWhereYoureGoing] = [LookWhereYoureGoing(NPC, player, 5, 3, 1, 0.1) for NPC in NPCs]
 elif option == 11: # Add 5 NPCs
     NPCs = list_of_random_npcs(screen, 5)
     search: List[Wander] = [Wander(NPC, player, 6, random.randint(0,3), 15, 50, 50, 50, 0.5, 0.5, 300) for NPC in NPCs]
 elif option == 12:
     NPCs = list_of_random_npcs(screen, 1)
-    path: List[pygame.Vector2] = [pygame.Vector2(random.randint(0, screen.get_width()), random.randint(0, screen.get_height())) for _ in range(32)]
-    search: List[FollowPath] = [FollowPath(NPC, player, random.randint(10, const_velocity), path, 0.5, 0) for NPC in NPCs]
+    path: List[pygame.Vector2] = create_square_path(screen, 36)
+    search: List[FollowPath] = [FollowPath(NPC, player, const_velocity, path, 0.5, 0) for NPC in NPCs]
 else:
     print("Opción inválida")
     exit()
@@ -87,6 +89,9 @@ while running:
 
     # fill the screen with a color to wipe away anything from last frame
     screen.fill(background)
+
+    if option == 12:
+        pygame.draw.lines(screen, (80, 90, 150), True, path, 10)
 
     for i in range(len(NPCs)):
         steering: KinematicSteeringOutput = search[i].get_steering()
@@ -108,8 +113,7 @@ while running:
 
     player.set_orientation(atan2(hist_pos[0], hist_pos[1]))
 
-    if hist_pos.x >= 10000 or hist_pos.y >= 10000:
-        hist_pos = normalize(hist_pos.x, hist_pos.y)
+    hist_pos = normalize(hist_pos)
 
     check_border(screen, player)
 

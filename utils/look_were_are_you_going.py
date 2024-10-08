@@ -6,14 +6,13 @@ from utils.trigonometry import atan2, magnitude
 class LookWhereYoureGoing(Align):
     def __init__(self, character: Kinematic, target: Kinematic, maxAngularAcceleration: float, maxRotation: float, targetRadius: float, slowRadius: float, timeToTarget: float = 0.1):
         super().__init__(character, target, maxAngularAcceleration, maxRotation, targetRadius, slowRadius, timeToTarget)
-        self.father: Align = Align(character.copy(), target.copy(), maxAngularAcceleration, maxRotation, targetRadius, slowRadius, timeToTarget)
 
     def get_steering(self) -> SteeringOutput:
-        velocity: Vector2 = self.character.velocity
+        velocity: Vector2 = self.target.velocity
 
         if magnitude(velocity) == 0:
             return SteeringOutput()
         
-        self.father.target.orientation = atan2(-velocity.x, velocity.y)
+        self.character.orientation = atan2(velocity.x, velocity.y)
 
-        return self.father.get_steering()
+        return super().get_steering()
