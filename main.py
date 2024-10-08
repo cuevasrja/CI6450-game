@@ -7,6 +7,7 @@ from utils.follow_path import FollowPath
 from utils.look_were_are_you_going import LookWhereYoureGoing
 from utils.game import check_border, create_square_path, key_checker, show_menu
 from utils.pursue import Pursue
+from utils.separation import Separation
 from utils.wander import Wander
 from utils.align import Align
 from utils.arrive import Arrive
@@ -14,7 +15,7 @@ from utils.face import Face
 from utils.flee import Flee
 from utils.kinematic_algs import KinematicArrive, KinematicFlee, KinematicSteeringOutput, KinematicWander
 from utils.drawer import draw_polygon_by_class
-from utils.physics import Kinematic, list_of_center_npcs, list_of_random_npcs
+from utils.physics import Kinematic, SteeringOutput, list_of_center_npcs, list_of_random_npcs
 from utils.seek import Seek
 from utils.trigonometry import atan2, normalize
 from utils.velocity_match import VelocityMatch
@@ -57,7 +58,7 @@ elif option == 5:
     search: List[Flee] = [Flee(NPC, player, 50) for NPC in NPCs]
 elif option == 6:
     NPCs = list_of_random_npcs(screen, 1)
-    search: List[Arrive] = [Arrive(NPC, player, 100, random.randint(50, const_velocity), 10, 100) for NPC in NPCs]
+    search: List[Arrive] = [Arrive(NPC, player, 100, random.randint(50, const_velocity), 50, 100) for NPC in NPCs]
 elif option == 7:
     NPCs = list_of_random_npcs(screen, 3)
     search: List[Align] = [Align(NPC, player, random.randint(10, const_velocity), 3, 1, 0.1) for NPC in NPCs]
@@ -72,14 +73,17 @@ elif option == 10:
     search: List[Pursue] = [Pursue(NPC, player, const_velocity, 0.1) for NPC in NPCs]
 elif option == 11:
     NPCs = list_of_random_npcs(screen, 1)
-    search: List[LookWhereYoureGoing] = [LookWhereYoureGoing(NPC, player, 5, math.pi, 1, 0.1) for NPC in NPCs]
+    search: List[LookWhereYoureGoing] = [LookWhereYoureGoing(NPC, player, 5, math.pi, 1, 0.1, const_velocity) for NPC in NPCs]
 elif option == 12: # Add 5 NPCs
     NPCs = list_of_random_npcs(screen, 5)
     search: List[Wander] = [Wander(NPC, player, 5, 2*math.pi, 15, 10, 10, 10, 0.5, 0.5, 300) for NPC in NPCs]
 elif option == 13:
     NPCs = list_of_random_npcs(screen, 1)
     path: List[pygame.Vector2] = create_square_path(screen, 36)
-    search: List[FollowPath] = [FollowPath(NPC, player, const_velocity, path, 50, 0) for NPC in NPCs]
+    search: List[FollowPath] = [FollowPath(NPC, player, const_velocity, path, 5, 0) for NPC in NPCs]
+elif option == 14:
+    NPCs = list_of_random_npcs(screen, 10)
+    search: List[Separation] = [Separation(NPC, NPCs, player, const_velocity, 50, 100) for NPC in NPCs]
 else:
     print("Opción inválida")
     exit()
@@ -98,7 +102,7 @@ while running:
         pygame.draw.lines(screen, (80, 90, 150), True, path, 2)
 
     for i in range(len(NPCs)):
-        steering: KinematicSteeringOutput = search[i].get_steering()
+        steering: KinematicSteeringOutput|SteeringOutput = search[i].get_steering()
 
         if 1 <= option <= 3:
             NPCs[i].set_velocity(steering.velocity.x, steering.velocity.y)
