@@ -63,7 +63,7 @@ elif option == 7:
     search: List[Align] = [Align(NPC, player, random.randint(10, const_velocity), 3, 1, 0.1) for NPC in NPCs]
 elif option == 8:
     NPCs = list_of_random_npcs(screen, 1)
-    search: List[VelocityMatch] = [VelocityMatch(NPC, player, 10000) for NPC in NPCs]
+    search: List[VelocityMatch] = [VelocityMatch(NPC, player, const_velocity) for NPC in NPCs]
 elif option == 9: # Add 5 NPCs
     NPCs = list_of_random_npcs(screen, 5)
     search: List[Face] = [Face(NPC, player, 50, 2*math.pi, 1, 0.1) for NPC in NPCs]
