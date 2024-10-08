@@ -15,9 +15,10 @@ def show_menu() -> int:
     print("7. Align")
     print("8. Velocity Match")
     print("9. Face")
-    print("10. Look Where You're Going")
-    print("11. Dynamic Wander")
-    print("12. Path Following")
+    print("10. Pursue and Evade")
+    print("11. Look Where You're Going")
+    print("12. Dynamic Wander")
+    print("13. Path Following")
 
     return int(input("\033[1;92mSeleccione una opción: \033[0m"))
 

@@ -10,15 +10,12 @@ class Path:
         self.cur: int = cur
         self.offset: float = offset
 
-    def get_param(self, position: Vector2, current_param: int) -> float:
-        if current_param >= len(self.points):
-            return current_param
-        while current_param < len(self.points) - 1:
-            if magnitude(self.points[current_param] - position) < self.offset:
-                current_param += 1
-            else:
-                break
+    def get_param(self, position: Vector2, current_param: int) -> int:
+        direction: Vector2 = self.points[current_param] - position
+        if magnitude(direction) < self.offset:
+            return current_param + 1
         return current_param
+        
 
     def get_position(self, param: int) -> Vector2:
         return self.points[param]

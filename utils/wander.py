@@ -4,6 +4,9 @@ from pygame import Vector2
 from utils.face import Face
 from utils.physics import Kinematic, SteeringOutput
 
+def random_binomial() -> float:
+    return random.uniform(-1, 1)
+
 class Wander(Face):
     def __init__(self, character: Kinematic, target: Kinematic, maxAngularAcceleration: float, maxRotation: float, targetRadius: float, slowRadius: float, wanderOffset: float, wanderRadius: float, wanderRate: float, wanderOrientation: float, maxAcceleration: float):
         super().__init__(character, target, maxAngularAcceleration, maxRotation, targetRadius, slowRadius)
@@ -14,7 +17,7 @@ class Wander(Face):
         self.maxAcceleration: float = maxAcceleration
 
     def get_steering(self) -> SteeringOutput:
-        self.wanderOrientation += random.uniform(-self.wanderRate, self.wanderRate)
+        self.wanderOrientation += random_binomial() * self.wanderRate
 
         targetOrientation: float = self.wanderOrientation + self.character.orientation
 

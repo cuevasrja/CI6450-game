@@ -6,6 +6,7 @@ import pygame
 from utils.follow_path import FollowPath
 from utils.look_were_are_you_going import LookWhereYoureGoing
 from utils.game import check_border, create_square_path, key_checker, show_menu
+from utils.pursue import Pursue
 from utils.wander import Wander
 from utils.align import Align
 from utils.arrive import Arrive
@@ -68,14 +69,17 @@ elif option == 9: # Add 5 NPCs
     search: List[Face] = [Face(NPC, player, 50, 2*math.pi, 1, 0.1) for NPC in NPCs]
 elif option == 10:
     NPCs = list_of_random_npcs(screen, 1)
-    search: List[LookWhereYoureGoing] = [LookWhereYoureGoing(NPC, player, 5, 3, 1, 0.1) for NPC in NPCs]
-elif option == 11: # Add 5 NPCs
+    search: List[Pursue] = [Pursue(NPC, player, const_velocity, 0.1) for NPC in NPCs]
+elif option == 11:
+    NPCs = list_of_random_npcs(screen, 1)
+    search: List[LookWhereYoureGoing] = [LookWhereYoureGoing(NPC, player, 5, math.pi, 1, 0.1) for NPC in NPCs]
+elif option == 12: # Add 5 NPCs
     NPCs = list_of_random_npcs(screen, 5)
-    search: List[Wander] = [Wander(NPC, player, 6, random.randint(0,3), 15, 50, 50, 50, 0.5, 0.5, 300) for NPC in NPCs]
-elif option == 12:
+    search: List[Wander] = [Wander(NPC, player, 5, 2*math.pi, 15, 10, 10, 10, 0.5, 0.5, 300) for NPC in NPCs]
+elif option == 13:
     NPCs = list_of_random_npcs(screen, 1)
     path: List[pygame.Vector2] = create_square_path(screen, 36)
-    search: List[FollowPath] = [FollowPath(NPC, player, const_velocity, path, 0.5, 0) for NPC in NPCs]
+    search: List[FollowPath] = [FollowPath(NPC, player, const_velocity, path, 50, 0) for NPC in NPCs]
 else:
     print("Opción inválida")
     exit()
@@ -90,8 +94,8 @@ while running:
     # fill the screen with a color to wipe away anything from last frame
     screen.fill(background)
 
-    if option == 12:
-        pygame.draw.lines(screen, (80, 90, 150), True, path, 10)
+    if option == 13:
+        pygame.draw.lines(screen, (80, 90, 150), True, path, 2)
 
     for i in range(len(NPCs)):
         steering: KinematicSteeringOutput = search[i].get_steering()
@@ -111,9 +115,9 @@ while running:
     keys: pygame.key.ScancodeWrapper = pygame.key.get_pressed()
     key_checker(keys, player, hist_pos, const_velocity, dt)
 
-    player.set_orientation(atan2(hist_pos[0], hist_pos[1]))
-
-    hist_pos = normalize(hist_pos)
+    if option != 11:
+        player.set_orientation(atan2(hist_pos[0], hist_pos[1]))
+        hist_pos = normalize(hist_pos)
 
     check_border(screen, player)
 
