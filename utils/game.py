@@ -27,7 +27,7 @@ def show_menu() -> int:
     print("12. Dynamic Wander")
     print("13. Path Following")
     print("14. Separation")
-
+    print("15. Collision Avoidance \033[91;1m(En desarrollo)\033[0m")
     return int(input("\033[1;92mSeleccione una opción: \033[0m"))
 
 def check_border(screen: pygame.Surface, player: Kinematic, border: int = 0) -> None:

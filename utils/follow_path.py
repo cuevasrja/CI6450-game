@@ -48,14 +48,14 @@ class FollowPath(Seek):
     - `max_speed` : float : The maximum speed of the character.
     - `path` : Path : The path to follow.
     - `path_ofset` : float : The offset to consider the point as reached.
-    - `current_param` : int : The current point in the path. (default 0)
 
     ### Methods
     - `get_steering() -> SteeringOutput` : Returns the steering to follow the path.
     """
-    def __init__(self, character: Kinematic, target: Static, max_speed: float, path: List[Vector2], path_ofset: float, current_param: int = 0):
+    def __init__(self, character: Kinematic, target: Static, max_speed: float, path: List[Vector2], path_ofset: float):
         super().__init__(character, target, max_speed)
-        self.path: Path = Path(path, current_param, path_ofset)
+        nearest_point_param: int = min(range(len(path)), key=lambda i: magnitude(path[i] - character.position))
+        self.path: Path = Path(path, nearest_point_param, path_ofset)
 
 
     def get_steering(self) -> SteeringOutput:

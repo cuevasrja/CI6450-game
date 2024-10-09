@@ -3,6 +3,7 @@ import math
 import random
 from typing import List
 import pygame
+from utils.collision_avoidance import CollisionAvoidance
 from utils.follow_path import FollowPath
 from utils.look_were_are_you_going import LookWhereYoureGoing
 from utils.game import check_border, create_square_path, key_checker, show_menu
@@ -36,7 +37,6 @@ const_velocity: float = 300
 const_angular_velocity: float = math.pi/2
 
 player: Kinematic = Kinematic(position=pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2), angular_velocity=const_angular_velocity)
-n_NPCs: int = 1
 NPCs: List[Kinematic] = []
 
 search = None
@@ -52,10 +52,10 @@ elif option == 3:
     search: List[KinematicWander] = [KinematicWander(NPC, const_velocity, random.randint(0,3)) for NPC in NPCs]
 elif option == 4:
     NPCs = list_of_random_npcs(screen, 1)
-    search: List[Seek] = [Seek(NPC, player, const_velocity) for NPC in NPCs]
+    search: List[Seek] = [Seek(NPC, player, random.randint(50, const_velocity)) for NPC in NPCs]
 elif option == 5:
     NPCs = list_of_center_npcs(screen, 3)
-    search: List[Flee] = [Flee(NPC, player, 50) for NPC in NPCs]
+    search: List[Flee] = [Flee(NPC, player, random.randint(50, const_velocity)) for NPC in NPCs]
 elif option == 6:
     NPCs = list_of_random_npcs(screen, 1)
     search: List[Arrive] = [Arrive(NPC, player, 100, random.randint(50, const_velocity), 50, 100) for NPC in NPCs]
@@ -76,16 +76,24 @@ elif option == 11:
     search: List[LookWhereYoureGoing] = [LookWhereYoureGoing(NPC, player, 5, math.pi, 1, 0.1, const_velocity) for NPC in NPCs]
 elif option == 12: # Add 5 NPCs
     NPCs = list_of_random_npcs(screen, 5)
-    search: List[Wander] = [Wander(NPC, player, 5, 2*math.pi, 15, 10, 10, 10, 0.5, 0.5, 300) for NPC in NPCs]
+    search: List[Wander] = [Wander(NPC, player, 5, 2*math.pi, 15, 10, 10, 5, 0.5, 0.5, 300) for NPC in NPCs]
 elif option == 13:
     NPCs = list_of_random_npcs(screen, 1)
     path: List[pygame.Vector2] = create_square_path(screen, 36)
-    search: List[FollowPath] = [FollowPath(NPC, player, const_velocity, path, 5, 0) for NPC in NPCs]
+    search: List[FollowPath] = [FollowPath(NPC, player, const_velocity, path, 5) for NPC in NPCs]
 elif option == 14:
     NPCs = list_of_random_npcs(screen, 10)
-    search: List[Separation] = [Separation(NPC, NPCs, player, const_velocity, 50, 100) for NPC in NPCs]
+    search: List[Separation] = []
+    for NPC, i in zip(NPCs, range(len(NPCs))):
+        rest_of_NPCs: List[Separation] = NPCs[:i] + NPCs[i+1:]
+        search.append(Separation(NPC, rest_of_NPCs, player, const_velocity, 50, 1000))
+elif option == 15:
+    NPCs = list_of_random_npcs(screen, 5)
+    for NPC, i in zip(NPCs, range(len(NPCs))):
+        rest_of_NPCs: List[Separation] = NPCs[:i] + NPCs[i+1:]
+        search: List[Separation] = [CollisionAvoidance(NPC, rest_of_NPCs, const_velocity, 50) for NPC in NPCs]
 else:
-    print("Opción inválida")
+    print("\033[91;1mOpción inválida\033[0m")
     exit()
 
 while running:
