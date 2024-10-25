@@ -96,6 +96,12 @@ class Connection:
     def get_cost(self) -> float:
         return self.cost
     
+    def get_from_node(self) -> Node:
+        return self.node1
+    
+    def get_to_node(self) -> Node:
+        return self.node2
+    
     def __str__(self) -> str:
         return f"Connection between {self.node1.id} and {self.node2.id} with cost {self.cost}"
     
