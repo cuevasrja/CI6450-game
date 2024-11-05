@@ -24,6 +24,7 @@ class Action(DecisionTreeNode):
     ### Methods
     - `make_decision()`: Returns the node itself.
     """
+    @abstractmethod
     def make_decision(self):
         return self
 
