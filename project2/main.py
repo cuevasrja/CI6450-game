@@ -57,7 +57,7 @@ enemy_animation_counters = [0, 0, 0]
 obs = pygame.image.load("./imgs/obstacle.png")
 
 # Black hole sprite
-black_hole = [pygame.image.load(f"./imgs/obstacle.png") for i in range(1, 13)]
+black_hole = [pygame.image.load(f"./imgs/obstacle.png")]
 
 PLAYER_SCALE = 1.5
 scaled_player = pygame.transform.scale(
@@ -88,62 +88,48 @@ enemy_positions = [
 ]
 
 black_holes = [
-    {"x": 900, "y": 1200},
-    {"x": 1650, "y": 600},
-    {"x": 1075, "y": 450},
-    {"x": 500, "y": 200}
+    {"x": 850, "y": 1000},
+    {"x": 1700, "y": 400},
+    {"x": 250, "y": 150},
+    {"x": 700, "y": 500}
 ]
 
-# Crear una máscara del laberinto para colisiones
 space_mask = pygame.mask.from_surface(zoomed_world)
 
-# Posición del jugador en el mundo
 player_x = 0
 player_y = 700 
 
-# Límites del mundo
 WORLD_WIDTH = zoomed_world.get_width()
 WORLD_HEIGHT = zoomed_world.get_height()
 
-# Control de FPS
 reloj = pygame.time.Clock()
 
-# Márgenes para activar el movimiento de la cámara
 CAMERA_MARGIN = 200
 MOVE_SPEED = 5
-
-# Acciones del experimento 1
-# Perseguir al jugador
 
 ARRIVAL_RADIUS = 30
 MAX_SPEED = 5
 
-# Variables for pathfinding
 current_path = None
 target_exp = None
 current_sprite = standing_player
 
-# BUCLE DE JUEGO
 while True:
     # FPS
     reloj.tick(60)
     
-    # Bucle del juego
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
             
-    # Guardar posición anterior
     old_x = player_x
     old_y = player_y
     
-    # Movimiento del jugador
     keys = pygame.key.get_pressed()
     new_x = player_x
     new_y = player_y
 
-    # Then modify your game loop where you handle player movement:
     animacion_velocidad = 0.5
     
     if keys[pygame.K_a]:
@@ -173,22 +159,18 @@ while True:
             steps = 0
         current_sprite = player_movement_down[int(steps)]
     elif keys[pygame.K_SPACE]:
-        # Get path to nearest experiment
         current_path, target_exp = find_nearest_enemy(game_graph, block_size, player_x, player_y, enemy_positions)
     
         if current_path:
-            # Move player along path
             next_node = current_path[0].to_node
             target_x = next_node.x * block_size
             target_y = next_node.y * block_size
             
-            # Calculate movement direction
             dx = target_x - player_x
             dy = target_y - player_y
             dist = ((dx**2 + dy**2)**0.5)
             
             if dist > 0:
-                # Normalize and apply movement
                 dx = dx/dist * MOVE_SPEED  
                 dy = dy/dist * MOVE_SPEED
                 
@@ -199,29 +181,24 @@ while True:
                     player_x = new_x
                     player_y = new_y
             
-            # Draw path
             draw_path(SCREEN, current_path, camera_x, camera_y, block_size)
     else:
         steps = 0
         current_sprite = standing_player if direction == 'right' else player_standing_left
 
-    # Scale the current sprite
     scaled_current_sprite = pygame.transform.scale(
         current_sprite,
         (int(current_sprite.get_width() * PLAYER_SCALE),
          int(current_sprite.get_height() * PLAYER_SCALE))
     )
 
-    # Verificar colisiones antes de actualizar la posición
     if not check_collision(zoomed_world, new_x, new_y):
         player_x = new_x
         player_y = new_y
     
-    # Limitar al jugador dentro del mundo
     player_x = max(scaled_player.get_width()//2, min(WORLD_WIDTH - scaled_player.get_width()//2, player_x))
     player_y = max(scaled_player.get_height()//2, min(WORLD_HEIGHT - scaled_player.get_height()//2, player_y))
     
-    # Actualizar la cámara
     player_screen_x = player_x - camera_x
     player_screen_y = player_y - camera_y
     
@@ -245,7 +222,6 @@ while True:
     
     SCREEN.blit(scaled_current_sprite, (player_x - camera_x - scaled_current_sprite.get_width()//2, 
                                          player_y - camera_y - scaled_current_sprite.get_height()//2))
-    # Actualizar posición y animación de los enemigos
     for i, enemy in enumerate(enemy_positions):
         kinematic_action = KinematicArriveAction(enemy, (player_x, player_y), MAX_SPEED, ARRIVAL_RADIUS)
         patrol_action = PatrolAction(enemy, enemy_directions[i])
@@ -331,9 +307,23 @@ while True:
                       enemy["y"] - camera_y - enemy["sprite"].get_height()//2))
     
     for hole in black_holes:
-        SCREEN.blit(scaled_black_hole,
+        # Calculate if the player is around the black hole
+        player_block_x = player_x // block_size
+        player_block_y = player_y // block_size
+
+        hole_block_x = hole["x"] // block_size
+        hole_block_y = hole["y"] // block_size
+
+        # If the player is in the same block as the black hole, the hole desappears
+        if player_block_x == hole_block_x and player_block_y == hole_block_y:
+            black_holes.remove(hole)
+            continue
+            
+        if hole is not None:
+            SCREEN.blit(scaled_black_hole,
                      (hole["x"] - camera_x - scaled_black_hole.get_width()//2,
-                      hole["y"] - camera_y - scaled_black_hole.get_height()//2))
+                      hole["y"] - camera_y - scaled_black_hole.get_height()//2)
+            )
     
     if current_path:
         draw_path(SCREEN, current_path, camera_x, camera_y, block_size)
