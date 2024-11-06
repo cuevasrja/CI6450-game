@@ -276,7 +276,7 @@ while True:
     SCREEN.blit(zoomed_world, (-camera_x, -camera_y))
     
     # Draw the game graph
-    # game_graph.draw_world_representation(SCREEN, camera_x, camera_y)
+    game_graph.draw_world_representation(SCREEN, camera_x, camera_y)
     
     # Draw the player
     SCREEN.blit(scaled_current_sprite, (player_x - camera_x - scaled_current_sprite.get_width()//2, 
