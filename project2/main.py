@@ -1,4 +1,6 @@
 import math
+from sqlite3 import Connection
+from typing import Dict, List
 import pygame, sys
 from utils.game import check_collision, draw_path, find_nearest_enemy, test_player_in_range_and_zone
 from utils.game_graph import GameGraph
@@ -12,17 +14,17 @@ pygame.init()
 
 # Set up the display
 window_width, window_height = 700, 600
-SCREEN = pygame.display.set_mode((window_width,window_height))
+SCREEN: pygame.Surface = pygame.display.set_mode((window_width,window_height))
 
 # Set up the window name
 pygame.display.set_caption("Space Invaders")
 
 # Load the background image
-background_image = pygame.image.load("./imgs/background.jpg").convert()
+background_image: pygame.Surface = pygame.image.load("./imgs/background.jpg").convert()
 
 # Zoom the background image
-ZOOM = 1.50
-zoomed_world = pygame.transform.scale(
+ZOOM: float = 1.50
+zoomed_world: pygame.Surface = pygame.transform.scale(
     background_image, 
     (int(background_image.get_width() * ZOOM), 
      int(background_image.get_height() * ZOOM))
@@ -32,63 +34,63 @@ zoomed_world = pygame.transform.scale(
 SCREEN.blit(background_image, (0,0))
 
 # Create the game graph
-block_size = 40
-game_graph = GameGraph(zoomed_world, block_size)
+block_size: int = 40
+game_graph: GameGraph = GameGraph(zoomed_world, block_size)
 
 # Player
-camera_x = 0
-camera_y = 0
+camera_x: int = 0
+camera_y: int = 0
 
-standing_player = pygame.image.load("./imgs/player_r.png")
-player_standing_left = pygame.image.load("./imgs/player_l.png")
+standing_player: List[pygame.Surface] = pygame.image.load("./imgs/player_r.png")
+player_standing_left: List[pygame.Surface] = pygame.image.load("./imgs/player_l.png")
 
-player_movement_right = [pygame.image.load(f"./imgs/player_r.png")]
-player_movement_left = [pygame.image.load(f"./imgs/player_l.png")]
-player_movement_up = [pygame.image.load(f"./imgs/player_t.png")]
-player_movement_down = [pygame.image.load(f"./imgs/player_b.png")]
+player_movement_right: List[pygame.Surface] = [pygame.image.load(f"./imgs/player_r.png")]
+player_movement_left: List[pygame.Surface] = [pygame.image.load(f"./imgs/player_l.png")]
+player_movement_up: List[pygame.Surface] = [pygame.image.load(f"./imgs/player_t.png")]
+player_movement_down: List[pygame.Surface] = [pygame.image.load(f"./imgs/player_b.png")]
 
-steps = 0
-direction = 'right'
+steps: int = 0
+direction: str = 'right'
 
 # Enemy
 # Load the enemy sprite    
-enemy_stand_by = pygame.image.load("./imgs/enemy_r.png")
+enemy_stand_by: List[pygame.Surface] = pygame.image.load("./imgs/enemy_r.png")
 
-enemyMoveRight = [pygame.image.load(f"./imgs/enemy_r.png")]
-enemyMoveLeft = [pygame.image.load(f"./imgs/enemy_l.png")]
+enemyMoveRight: List[pygame.Surface] = [pygame.image.load(f"./imgs/enemy_r.png")]
+enemyMoveLeft: List[pygame.Surface] = [pygame.image.load(f"./imgs/enemy_l.png")]
 
-enemyAttackRight = [pygame.image.load(f"./imgs/enemy_attack_r.png")]
-enemyAttackLeft = [pygame.image.load(f"./imgs/enemy_attack_l.png")]
+enemyAttackRight: List[pygame.Surface] = [pygame.image.load(f"./imgs/enemy_attack_r.png")]
+enemyAttackLeft: List[pygame.Surface] = [pygame.image.load(f"./imgs/enemy_attack_l.png")]
 
-ENEMY_SPEED = 5
-enemy_directions = ['right', 'right']
-enemy_animation_counters = [0, 0]
+ENEMY_SPEED: int = 5
+enemy_directions: List[str] = ['right', 'right']
+enemy_animation_counters: List[int] = [0, 0]
 
 #Variables to control the enemy
-ENEMY_DETECTION_RADIUS = 100
-ENEMY_FLEE_SPEED = 5
-ENEMY_FLEE_MIN = 500
-ENEMY_FLEE_MAX = 1700
+ENEMY_DETECTION_RADIUS: int = 100
+ENEMY_FLEE_SPEED: int = 5
+ENEMY_FLEE_MIN: int = 500
+ENEMY_FLEE_MAX: int = 1700
 
 # Obstacle
-obs = pygame.image.load("./imgs/obstacle.png")
+obs: pygame.Surface = pygame.image.load("./imgs/obstacle.png")
 
 # Black hole sprite
-black_hole = [pygame.image.load(f"./imgs/obstacle.png")]
+black_hole: List[pygame.Surface] = [pygame.image.load(f"./imgs/obstacle.png")]
 
 # Scale the player sprite
-PLAYER_SCALE = 1.5
-scaled_player = pygame.transform.scale(
+PLAYER_SCALE: float = 1.5
+scaled_player: pygame.Surface = pygame.transform.scale(
     standing_player,
     (int(standing_player.get_width() * PLAYER_SCALE),
      int(standing_player.get_height() * PLAYER_SCALE))
 )
 
 # Scale the enemy sprite
-ENEMY_SCALE = 1.2
-BOMB_SCALE = 1.5
+ENEMY_SCALE: float = 1.2
+BOMB_SCALE: float = 1.5
 
-scaled_enemy_experiment = pygame.transform.scale(
+scaled_enemy_experiment: pygame.Surface = pygame.transform.scale(
     enemy_stand_by,
     (int(enemy_stand_by.get_width() * ENEMY_SCALE),
      int(enemy_stand_by.get_height() * ENEMY_SCALE))
@@ -96,20 +98,20 @@ scaled_enemy_experiment = pygame.transform.scale(
 
 
 # Scale the black hole sprite
-scaled_black_hole = pygame.transform.scale(
+scaled_black_hole: pygame.Surface = pygame.transform.scale(
     obs,
     (int(obs.get_width() * BOMB_SCALE),
      int(obs.get_height() * BOMB_SCALE))
 )
 
 # Enemy positions
-enemy_positions = [
+enemy_positions: List[Dict[str, int|pygame.Surface]] = [
     {"x": 1000, "y": 650, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False},
     {"x": 1300, "y": 200, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False},
 ]
 
 # Black holes
-black_holes = [
+black_holes: List[Dict[str, int]] = [
     {"x": 850, "y": 1000},
     {"x": 1700, "y": 400},
     {"x": 250, "y": 150},
@@ -121,30 +123,30 @@ black_holes = [
 ]
 
 # Create the mask for the zoomed world
-space_mask = pygame.mask.from_surface(zoomed_world)
+space_mask: pygame.Mask = pygame.mask.from_surface(zoomed_world)
 
-player_x = 0
-player_y = 700 
+player_x: int = 0
+player_y: int = 700 
 
 # Constants
-WORLD_WIDTH = zoomed_world.get_width()
-WORLD_HEIGHT = zoomed_world.get_height()
+WORLD_WIDTH: int = zoomed_world.get_width()
+WORLD_HEIGHT: int = zoomed_world.get_height()
 
 # Clock
-reloj = pygame.time.Clock()
+reloj: pygame.time.Clock = pygame.time.Clock()
 
 # Camera
-CAMERA_MARGIN = 200
+CAMERA_MARGIN: int = 200
 
 # Arrive behavior
-MOVE_SPEED = 5
-ARRIVAL_RADIUS = 30
-MAX_SPEED = 5
+MOVE_SPEED: int = 5
+ARRIVAL_RADIUS: int = 30
+MAX_SPEED: int = 5
 
 # Path Finding
-current_path = None
+current_path: List[Connection]|None = None
 target_exp = None
-current_sprite = standing_player
+current_sprite: List[pygame.Surface] = standing_player
 
 # Game loop
 while True:
