@@ -4,35 +4,60 @@ from utils.kinematic_steering_output import KinematicSteeringOutput
 import math
 
 class KinematicFlee:
+    """
+    ### Description
+    A class that implements the Kinematic Flee behavior.
+
+    ### Attributes
+    - `character`: Static
+        The character that is fleeing.
+    - `target`: Static
+        The target to flee from.
+    - `maxSpeed`: float
+        The maximum speed of the character.
+    - `maxDistance`: float
+        The distance at which the character will flee.
+    - `screen_width`: int
+        The width of the screen.
+
+    ### Methods
+    - `get_steering() -> KinematicSteeringOutput`
+        Returns the steering output for the character.
+    - `get_edge_force() -> Vector2`
+        Returns the force to avoid the edges of the screen.
+    - `new_orientation(current: float, velocity: Vector2) -> float`
+        Returns the new orientation of the character.
+    """
     def __init__(self, character: Static, target: Static, maxSpeed: float, maxDistance: float, screen_width: int, screen_height: int):
-        self.character = character
-        self.target = target
-        self.maxSpeed = maxSpeed
-        self.maxDistance = maxDistance
-        self.screen_width = screen_width
-        self.screen_height = screen_height
+        self.character: Static = character
+        self.target: Static = target
+        self.maxSpeed: float = maxSpeed
+        self.maxDistance: float = maxDistance
+        self.screen_width: int = screen_width
+        self.screen_height: int = screen_height
     
     def get_steering(self) -> KinematicSteeringOutput:
         result = KinematicSteeringOutput(Vector2(0, 0), 0)
         
-        direction = self.character.position - self.target.position
-        distance = direction.magnitude()
+        direction: Vector2 = self.character.position - self.target.position
+        distance: float = direction.magnitude()
         
         if distance > 0:
             result.velocity = direction.normalize() * self.maxSpeed
         
-        # Añadir una fuerza para alejarse de los bordes
-        edge_force = self.get_edge_force()
+        # Add edge force
+        edge_force: Vector2 = self.get_edge_force()
         result.velocity += edge_force
         
+        # Update orientation
         self.character.orientation = self.new_orientation(self.character.orientation, result.velocity)
         result.rotation = 0
         
         return result
     
     def get_edge_force(self) -> Vector2:
-        force = Vector2(0, 0)
-        edge_distance = 50  # Distancia desde el borde para empezar a aplicar la fuerza
+        force: Vector2 = Vector2(0, 0)
+        edge_distance: int = 50  # Distance from the edge at which to start avoiding it
 
         if self.character.position.x < edge_distance:
             force.x += self.maxSpeed * (1 - self.character.position.x / edge_distance)
