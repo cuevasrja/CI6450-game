@@ -70,11 +70,11 @@ class GameGraph(Graph):
             screen_y = y * self.block_size - camera_y
             
             # Dibuja el borde de cada tile
-            pygame.draw.rect(surface, (0, 255, 0), 
+            pygame.draw.rect(surface, "yellow", 
                             (screen_x, screen_y, self.block_size, self.block_size), 1)
             
             # Dibuja el nodo representativo (punto central)
-            pygame.draw.circle(surface, (255, 0, 0),
+            pygame.draw.circle(surface, "red",
                             (screen_x + self.block_size//2, screen_y + self.block_size//2), 3)
             
             # Dibuja las conexiones
@@ -83,6 +83,6 @@ class GameGraph(Graph):
                 if isinstance(to_node, TileNode):
                     end_x = to_node.x * self.block_size - camera_x + self.block_size//2
                     end_y = to_node.y * self.block_size - camera_y + self.block_size//2
-                    pygame.draw.line(surface, (0, 0, 255),
+                    pygame.draw.line(surface, "blue",
                                 (screen_x + self.block_size//2, screen_y + self.block_size//2),
                                 (end_x, end_y), 1)

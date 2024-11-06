@@ -198,7 +198,11 @@ while True:
         if steps >= len(player_movement_down):
             steps = 0
         current_sprite = player_movement_down[int(steps)]
-    elif keys[pygame.K_q]: # Path Finding
+    else: # Standing
+        steps = 0
+        current_sprite = standing_player if direction == 'right' else player_standing_left
+
+    if keys[pygame.K_q]: # Path Finding
         current_path, target_exp = find_nearest_enemy(game_graph, block_size, player_x, player_y, enemy_positions)
         
         # Draw the path
@@ -226,9 +230,10 @@ while True:
                     player_y = new_y
             # Dr
             draw_path(SCREEN, current_path, camera_x, camera_y, block_size)
-    else: # Standing
-        steps = 0
-        current_sprite = standing_player if direction == 'right' else player_standing_left
+    else: # No path
+        current_path = None
+        target_exp = None
+
 
     # Scale the player sprite
     scaled_current_sprite = pygame.transform.scale(
@@ -271,7 +276,7 @@ while True:
     SCREEN.blit(zoomed_world, (-camera_x, -camera_y))
     
     # Draw the game graph
-    game_graph.draw_world_representation(SCREEN, camera_x, camera_y)
+    # game_graph.draw_world_representation(SCREEN, camera_x, camera_y)
     
     # Draw the player
     SCREEN.blit(scaled_current_sprite, (player_x - camera_x - scaled_current_sprite.get_width()//2, 
