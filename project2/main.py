@@ -1,9 +1,11 @@
+import math
 import pygame, sys
 from utils.game import check_collision, draw_path, find_nearest_enemy, test_player_in_range_and_zone
 from utils.game_graph import GameGraph
 from utils.kinematic_arrive import KinematicArrive
 from utils.kinematic_arrive_descision import KinematicArriveAction, PatrolAction, InRangeDecision, AttackAction, PlayerReachedDecision
-from pygame.locals import *
+from utils.kinematic_flee import KinematicFlee
+from utils.kinematic_flee_descision import KinematicFleeAction
 
 pygame.init()
 
@@ -41,17 +43,22 @@ player_movement_down = [pygame.image.load(f"./imgs/player_b.png")]
 steps = 0
 direction = 'right'
     
-enemy = pygame.image.load("./imgs/enemy.png")
+enemy_stand_by = pygame.image.load("./imgs/enemy_r.png")
 
 enemyMoveRight = [pygame.image.load(f"./imgs/enemy_r.png")]
 enemyMoveLeft = [pygame.image.load(f"./imgs/enemy_l.png")]
 
-enemyAttackRight = [pygame.image.load(f"./imgs/enemy_r.png")]
-attackExperiment1Left = [pygame.image.load(f"./imgs/enemy_l.png")]
+enemyAttackRight = [pygame.image.load(f"./imgs/enemy_attack_r.png")]
+enemyAttackLeft = [pygame.image.load(f"./imgs/enemy_attack_l.png")]
 
 ENEMY_SPEED = 5
-enemy_directions = ['right', 'right', 'left']
-enemy_animation_counters = [0, 0, 0]
+enemy_directions = ['right', 'right']
+enemy_animation_counters = [0, 0]
+
+ENEMY_DETECTION_RADIUS = 100
+ENEMY_FLEE_SPEED = 5
+ENEMY_FLEE_MIN = 500
+ENEMY_FLEE_MAX = 1700
 
 # Obstáculos
 obs = pygame.image.load("./imgs/obstacle.png")
@@ -70,9 +77,9 @@ ENEMY_SCALE = 1.2
 BOMB_SCALE = 1.5
 
 scaled_enemy_experiment = pygame.transform.scale(
-    enemy,
-    (int(enemy.get_width() * ENEMY_SCALE),
-     int(enemy.get_height() * ENEMY_SCALE))
+    enemy_stand_by,
+    (int(enemy_stand_by.get_width() * ENEMY_SCALE),
+     int(enemy_stand_by.get_height() * ENEMY_SCALE))
 )
 
 scaled_black_hole = pygame.transform.scale(
@@ -84,14 +91,17 @@ scaled_black_hole = pygame.transform.scale(
 enemy_positions = [
     {"x": 1000, "y": 650, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False},
     {"x": 1300, "y": 200, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False},
-    {"x": 500, "y": 500, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False},
 ]
 
 black_holes = [
     {"x": 850, "y": 1000},
     {"x": 1700, "y": 400},
     {"x": 250, "y": 150},
-    {"x": 700, "y": 500}
+    {"x": 700, "y": 500},
+    {"x": 1000, "y": 1000},
+    {"x": 1500, "y": 200},
+    {"x": 2000, "y": 500},
+    {"x": 2500, "y": 1000}
 ]
 
 space_mask = pygame.mask.from_surface(zoomed_world)
@@ -119,7 +129,7 @@ while True:
     reloj.tick(60)
     
     for event in pygame.event.get():
-        if event.type == QUIT:
+        if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
             
@@ -158,7 +168,7 @@ while True:
         if steps >= len(player_movement_down):
             steps = 0
         current_sprite = player_movement_down[int(steps)]
-    elif keys[pygame.K_SPACE]:
+    elif keys[pygame.K_q]:
         current_path, target_exp = find_nearest_enemy(game_graph, block_size, player_x, player_y, enemy_positions)
     
         if current_path:
@@ -223,66 +233,117 @@ while True:
     SCREEN.blit(scaled_current_sprite, (player_x - camera_x - scaled_current_sprite.get_width()//2, 
                                          player_y - camera_y - scaled_current_sprite.get_height()//2))
     for i, enemy in enumerate(enemy_positions):
-        kinematic_action = KinematicArriveAction(enemy, (player_x, player_y), MAX_SPEED, ARRIVAL_RADIUS)
-        patrol_action = PatrolAction(enemy, enemy_directions[i])
+        if i%2 == 0:
+            kinematic_action = KinematicArriveAction(enemy, (player_x, player_y), MAX_SPEED, ARRIVAL_RADIUS)
+            patrol_action = PatrolAction(enemy, enemy_directions[i])
             
-        chase_decision = InRangeDecision(
-            (enemy["x"], enemy["y"]),
-            (player_x, player_y),
-            kinematic_action,
-            patrol_action,
-            test_player_in_range_and_zone
-        )
+            chase_decision = InRangeDecision(
+                (enemy["x"], enemy["y"]),
+                (player_x, player_y),
+                kinematic_action,
+                patrol_action,
+                test_player_in_range_and_zone
+            )
             
-        attack_action = AttackAction(enemy, enemy_directions[i], enemyAttackRight, attackExperiment1Left)
-        attack_decision = PlayerReachedDecision(
-            (enemy["x"], enemy["y"]),
-            (player_x, player_y),
-            attack_action,
-            chase_decision,
-            ARRIVAL_RADIUS
-        )
+            attack_action = AttackAction(enemy, enemy_directions[i], enemyAttackRight, enemyAttackLeft)
+            attack_decision = PlayerReachedDecision(
+                (enemy["x"], enemy["y"]),
+                (player_x, player_y),
+                attack_action,
+                chase_decision,
+                ARRIVAL_RADIUS
+            )
             
-        action = attack_decision.make_decision()
+            action = attack_decision.make_decision()
 
-        if action == "attack":
-            enemy["is_attacking"] = True
-            enemy_animation_counters[i] += 0.2
-            attack_sprites = enemyAttackRight if enemy_directions[i] == 'right' else attackExperiment1Left
-            
-            if enemy_animation_counters[i] >= len(attack_sprites):
-                enemy_animation_counters[i] = 0
-                enemy["is_attacking"] = False
-            
-            current_frame = int(enemy_animation_counters[i])
-            if current_frame >= len(attack_sprites):
-                current_frame = len(attack_sprites) - 1
+            if action == "attack":
+                enemy["is_attacking"] = True
+                enemy_animation_counters[i] += 0.2
+                attack_sprites = enemyAttackRight if enemy_directions[i] == 'right' else enemyAttackLeft
                 
-            enemy["sprite"] = pygame.transform.scale(
-                attack_sprites[current_frame],
-                (int(attack_sprites[current_frame].get_width() * ENEMY_SCALE),
-                int(attack_sprites[current_frame].get_height() * ENEMY_SCALE))
+                if enemy_animation_counters[i] >= len(attack_sprites):
+                    enemy_animation_counters[i] = 0
+                    enemy["is_attacking"] = False
+                
+                current_frame = int(enemy_animation_counters[i])
+                if current_frame >= len(attack_sprites):
+                    current_frame = len(attack_sprites) - 1
+                    
+                enemy["sprite"] = pygame.transform.scale(
+                    attack_sprites[current_frame],
+                    (int(attack_sprites[current_frame].get_width() * ENEMY_SCALE),
+                    int(attack_sprites[current_frame].get_height() * ENEMY_SCALE))
+                )
+
+            elif isinstance(action, KinematicArrive):
+                enemy["is_attacking"] = False
+                # Aplicar comportamiento de persecución
+                steering = action.get_steering()
+                if steering:
+                    new_x = enemy["x"] + steering.velocity.x
+                    enemy["x"] = new_x
+                    enemy_directions[i] = 'right' if steering.velocity.x > 0 else 'left'
+                    
+            elif action == "patrol":
+                enemy["is_attacking"] = False
+                # Comportamiento de patrulla
+                if enemy_directions[i] == 'right':
+                    new_x = enemy["x"] + ENEMY_SPEED
+                else:
+                    new_x = enemy["x"] - ENEMY_SPEED
+                
+                if check_collision(zoomed_world, new_x, enemy["y"]):
+                    enemy_directions[i] = 'left' if enemy_directions[i] == 'right' else 'right'
+                else:
+                    enemy["x"] = new_x
+        else:  
+            kinematic_flee = KinematicFleeAction(
+                enemy,
+                (player_x, player_y),
+                ENEMY_FLEE_SPEED,
+                ENEMY_DETECTION_RADIUS,
+                WORLD_WIDTH,
+                WORLD_HEIGHT,
+                ENEMY_FLEE_MIN,
+                ENEMY_FLEE_MAX
             )
 
-        elif isinstance(action, KinematicArrive):
-            enemy["is_attacking"] = False
-            steering = action.get_steering()
-            if steering:
-                new_x = enemy["x"] + steering.velocity.x
-                enemy["x"] = new_x
-                enemy_directions[i] = 'right' if steering.velocity.x > 0 else 'left'
-                
-        elif action == "patrol":
-            enemy["is_attacking"] = False
-            if enemy_directions[i] == 'right':
-                new_x = enemy["x"] + ENEMY_SPEED
+            patrol_action = PatrolAction(enemy, enemy_directions[i])
+
+            flee_decision = InRangeDecision(
+                (enemy["x"], enemy["y"]),
+                (player_x, player_y),
+                kinematic_flee,
+                patrol_action,
+                lambda pos1, pos2: (
+                    math.sqrt((pos2[0]-pos1[0])**2 + (pos2[1]-pos1[1])**2) <= ENEMY_DETECTION_RADIUS
+                    and ENEMY_FLEE_MIN <= pos1[0] <= ENEMY_FLEE_MAX
+                )
+            )
+
+            action = flee_decision.make_decision()
+
+            if isinstance(action, KinematicFlee):
+                steering = action.get_steering()
+                if steering:
+                    new_x = enemy["x"] + steering.velocity.x
+                    if ENEMY_FLEE_MIN <= new_x <= ENEMY_FLEE_MAX:
+                        enemy["x"] = new_x
+                    enemy_directions[i] = 'right' if steering.velocity.x > 0 else 'left'
             else:
-                new_x = enemy["x"] - ENEMY_SPEED
-            
-            if check_collision(zoomed_world, new_x, enemy["y"]):
-                enemy_directions[i] = 'left' if enemy_directions[i] == 'right' else 'right'
-            else:
-                enemy["x"] = new_x
+                if enemy_directions[i] == 'right':
+                    new_x = enemy["x"] + ENEMY_SPEED
+                    if new_x > ENEMY_FLEE_MAX:
+                        enemy_directions[i] = 'left'
+                else:
+                    new_x = enemy["x"] - ENEMY_SPEED
+                    if new_x < ENEMY_FLEE_MIN:
+                        enemy_directions[i] = 'right'
+                        
+                if check_collision(zoomed_world, new_x, enemy["y"]):
+                    enemy_directions[i] = 'left' if enemy_directions[i] == 'right' else 'right'
+                else:
+                    enemy["x"] = new_x
                 
         if not enemy["is_attacking"]:
             enemy_animation_counters[i] += 0.2
