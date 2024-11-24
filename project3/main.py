@@ -7,8 +7,8 @@ from utils.game import check_collision, draw_path, find_nearest_enemy, key_check
 from utils.game_graph import GameGraph
 from utils.arrive import Arrive
 from utils.arrive_descision import ArriveAction, PatrolAction, InRangeDecision, AttackAction, PlayerReachedDecision
-from utils.kinematic_flee import KinematicFlee
-from utils.kinematic_flee_descision import KinematicFleeAction
+from utils.flee import Flee
+from utils.flee_descision import FleeAction
 from utils.drawer import draw_polygon, draw_polygon_by_class
 from utils.kinematic import Kinematic
 from utils.trigonometry import atan2, normalize
@@ -314,7 +314,7 @@ while True:
                     enemy["x"] = new_x
         elif i == 1:
             # Flee behavior
-            kinematic_flee = KinematicFleeAction(
+            flee = FleeAction(
                 enemy,
                 (player.get_x(), player.get_y()),
                 ENEMY_FLEE_SPEED,
@@ -332,7 +332,7 @@ while True:
             flee_decision = InRangeDecision(
                 (enemy["x"], enemy["y"]),
                 (player.get_x(), player.get_y()),
-                kinematic_flee,
+                flee,
                 patrol_action,
                 lambda pos1, pos2: (
                     math.sqrt((pos2[0]-pos1[0])**2 + (pos2[1]-pos1[1])**2) <= ENEMY_DETECTION_RADIUS
@@ -344,18 +344,18 @@ while True:
             action = flee_decision.make_decision()
 
             # If the player is in range, flee
-            if isinstance(action, KinematicFlee):
+            if isinstance(action, Flee):
                 # Flee behavior
                 steering = action.get_steering()
 
                 # If the player is in range, flee
                 if steering:
-                    new_x = enemy["x"] + steering.velocity.x
+                    new_x = enemy["x"] + steering.linear.x
 
                     # Limit the horizontal movement
                     if ENEMY_FLEE_MIN <= new_x <= ENEMY_FLEE_MAX:
                         enemy["x"] = new_x
-                    enemy_directions[i] = 'right' if steering.velocity.x > 0 else 'left'
+                    enemy_directions[i] = 'right' if steering.linear.x > 0 else 'left'
             # If the player is not in range, patrol
             else:
                 # If direction is right, move right

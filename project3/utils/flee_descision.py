@@ -1,10 +1,11 @@
 from utils.decision_tree import Action
-from utils.kinematic_steering_output import KinematicSteeringOutput
+from utils.steering_output import SteeringOutput
 from utils.static import Static
+from utils.kinematic import Kinematic
 from pygame import Vector2
-from utils.kinematic_flee import KinematicFlee
+from utils.flee import Flee
 
-class KinematicFleeAction(Action):
+class FleeAction(Action):
     """
     ### Description
     An action that returns a KinematicFlee object.
@@ -41,8 +42,8 @@ class KinematicFleeAction(Action):
         self.min_x: int = min_x
         self.max_x: int = max_x
         
-    def make_decision(self) -> KinematicFlee|None:
-        enemy_static: Static = Static(Vector2(self.enemy["x"], self.enemy["y"]), 0)
+    def make_decision(self) -> Flee|None:
+        enemy_static: Static = Kinematic(Vector2(self.enemy["x"], self.enemy["y"]), 0)
         
         player_static: Static = Static(Vector2(self.player[0], self.player[1]), 0)
         
@@ -52,19 +53,16 @@ class KinematicFleeAction(Action):
 
         # If the player is within the max distance, flee 
         if distance <= self.max_distance:
-            flee_behavior = KinematicFlee(
+            flee_behavior = Flee(
                 enemy_static,
                 player_static,
-                self.max_speed,
-                self.max_distance,
-                self.screen_width,
-                self.screen_height
+                self.max_speed
             )
         
             # Update the enemy's position
-            steering: KinematicSteeringOutput = flee_behavior.get_steering()
+            steering: SteeringOutput = flee_behavior.get_steering()
             if steering:
-                new_x: int = self.enemy["x"] + steering.velocity.x
+                new_x: int = self.enemy["x"] + steering.linear.x
                 # Limitate the enemy's movement to the screen width
                 if self.min_x <= new_x <= self.max_x:
                     self.enemy["x"] = new_x
@@ -118,11 +116,11 @@ class PlayerAttackingDecision:
     - `make_decision(is_player_attacking: bool) -> KinematicFleeAction|EnemyAttackAction`
         Returns the appropriate action based on whether the player is attacking.
     """
-    def __init__(self, flee_action: KinematicFleeAction, attack_action: EnemyAttackAction):
-        self.flee_action: KinematicFleeAction = flee_action
+    def __init__(self, flee_action: FleeAction, attack_action: EnemyAttackAction):
+        self.flee_action: FleeAction = flee_action
         self.attack_action: EnemyAttackAction = attack_action
         
-    def make_decision(self, is_player_attacking) -> KinematicFleeAction|EnemyAttackAction:
+    def make_decision(self, is_player_attacking) -> FleeAction|EnemyAttackAction:
         if is_player_attacking:
             return self.flee_action
         return self.attack_action
