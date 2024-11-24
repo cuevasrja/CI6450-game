@@ -2,10 +2,11 @@ import math
 from sqlite3 import Connection
 from typing import Dict, List
 import pygame, sys
+from utils.steering_output import SteeringOutput
 from utils.game import check_collision, draw_path, find_nearest_enemy, key_checker, test_player_in_range_and_zone
 from utils.game_graph import GameGraph
-from utils.kinematic_arrive import KinematicArrive
-from utils.kinematic_arrive_descision import KinematicArriveAction, PatrolAction, InRangeDecision, AttackAction, PlayerReachedDecision
+from utils.arrive import Arrive
+from utils.arrive_descision import ArriveAction, PatrolAction, InRangeDecision, AttackAction, PlayerReachedDecision
 from utils.kinematic_flee import KinematicFlee
 from utils.kinematic_flee_descision import KinematicFleeAction
 from utils.drawer import draw_polygon, draw_polygon_by_class
@@ -127,7 +128,9 @@ CAMERA_MARGIN: int = 200
 # Arrive behavior
 MOVE_SPEED: int = 5
 ARRIVAL_RADIUS: int = 30
+SLOW_RADIUS: int = 100
 MAX_SPEED: int = 5
+MAX_ACCELERATION: int = 1
 
 # Path Finding
 current_path: List[Connection]|None = None
@@ -225,16 +228,16 @@ while True:
     SCREEN.blit(zoomed_world, (-camera_x, -camera_y))
     
     # Draw the game graph
-    game_graph.draw_world_representation(SCREEN, camera_x, camera_y)
+    # game_graph.draw_world_representation(SCREEN, camera_x, camera_y)
     
     # Draw the player
     draw_polygon_by_class(SCREEN, "blue", player, pygame.Vector2(camera_x, camera_y))
     
     # Draw the enemies
     for i, enemy in enumerate(enemy_positions):
-        if i%2 == 0: # Even enemies
+        if i == 0:
             # Persecution behavior
-            kinematic_action = KinematicArriveAction(enemy, (player.get_x(), player.get_y()), MAX_SPEED, ARRIVAL_RADIUS)
+            arrive_action = ArriveAction(enemy, (player.get_x(), player.get_y()), MAX_ACCELERATION, MAX_SPEED, ARRIVAL_RADIUS, SLOW_RADIUS)
             # Patrol behavior
             patrol_action = PatrolAction(enemy, enemy_directions[i])
             
@@ -242,7 +245,7 @@ while True:
             chase_decision = InRangeDecision(
                 (enemy["x"], enemy["y"]),
                 (player.get_x(), player.get_y()),
-                kinematic_action,
+                arrive_action,
                 patrol_action,
                 test_player_in_range_and_zone
             )
@@ -285,16 +288,16 @@ while True:
                 )
 
             # If the player is not in range, chase
-            elif isinstance(action, KinematicArrive):
+            elif isinstance(action, Arrive):
                 enemy["is_attacking"] = False
                 # Persecution behavior
-                steering = action.get_steering()
+                steering: SteeringOutput = action.get_steering()
                 if steering:
-                    new_x = enemy["x"] + steering.velocity.x
-                    new_y = enemy["y"] + steering.velocity.y
+                    new_x = enemy["x"] + steering.linear.x
+                    new_y = enemy["y"] + steering.linear.y
                     enemy["x"] = new_x
                     enemy["y"] = new_y
-                    enemy_directions[i] = 'right' if steering.velocity.x > 0 else 'left'
+                    enemy_directions[i] = 'right' if steering.linear.x > 0 else 'left'
             
             # If the player is not in range and the enemy is not chasing, patrol
             elif action == "patrol":
@@ -309,8 +312,7 @@ while True:
                     enemy_directions[i] = 'left' if enemy_directions[i] == 'right' else 'right'
                 else:
                     enemy["x"] = new_x
-        # Odd enemies
-        else:
+        elif i == 1:
             # Flee behavior
             kinematic_flee = KinematicFleeAction(
                 enemy,
@@ -374,6 +376,8 @@ while True:
                     enemy_directions[i] = 'left' if enemy_directions[i] == 'right' else 'right'
                 else:
                     enemy["x"] = new_x
+        elif i == 2:
+            pass
         
         # If the enemy is not attacking, animate the enemy
         if not enemy["is_attacking"]:
@@ -398,6 +402,7 @@ while True:
                 (int(sprites[current_frame].get_width() * ENEMY_SCALE),
                 int(sprites[current_frame].get_height() * ENEMY_SCALE))
             )
+
     
     # Draw the enemies
     for enemy in enemy_positions:
@@ -406,7 +411,9 @@ while True:
                       enemy["y"] - camera_y - enemy["sprite"].get_height()//2))
     
     # Draw the black holes
-    for hole in black_holes:
+    for i, hole in enumerate(black_holes):
+        if hole is None:
+            continue
         # Calculate if the player is around the black hole
         player_block_x = player.get_x() // block_size
         player_block_y = player.get_y() // block_size
@@ -416,7 +423,7 @@ while True:
 
         # If the player is in the same block as the black hole, the hole desappears
         if player_block_x == hole_block_x and player_block_y == hole_block_y:
-            black_holes.remove(hole)
+            black_holes[i] = None
             continue
             
         if hole is not None:

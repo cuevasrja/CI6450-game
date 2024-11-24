@@ -68,8 +68,8 @@ def get_path(game_graph: GameGraph, block_size: int, start_x: int, start_y: int,
     return None
 
 # Movement zone for enemy 1
-ENEMY_MIN_X = 850
-ENEMY_MAX_X = 1150
+ENEMY_MIN_X = 800
+ENEMY_MAX_X = 1300
 DETECTION_RADIUS = 150
 
 def test_player_in_range_and_zone(enemy_pos: pygame.Vector2, player_pos: pygame.Vector2) -> bool:
