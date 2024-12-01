@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable, Dict, List, Tuple
 from utils.decision_tree import Action, Decision
 from utils.kinematic import Kinematic
 from pygame import Vector2
@@ -24,7 +24,7 @@ class ArriveAction(Action):
     - `make_decision() -> Arrive`
         Returns a Arrive object
     """
-    def __init__(self, enemy, player, max_acceleration, max_speed, arrival_radius, slow_radius):
+    def __init__(self, enemy: Dict, player: Tuple[int, int], max_acceleration: float, max_speed: float, arrival_radius: float, slow_radius: float):
         self.enemy = enemy
         self.player = player
         self.max_acceleration = max_acceleration
@@ -33,8 +33,8 @@ class ArriveAction(Action):
         self.slow_radius = slow_radius
         
     def make_decision(self) -> Arrive:
-        enemy_static = Kinematic(Vector2(self.enemy["x"], self.enemy["y"]), 0)
-        player_static = Kinematic(Vector2(self.player[0], self.enemy["y"]), 0)
+        enemy_static: Kinematic = Kinematic(Vector2(self.enemy["x"], self.enemy["y"]), self.enemy["orientation"])
+        player_static: Kinematic = Kinematic(Vector2(self.player[0], self.player[1]))
         return Arrive(enemy_static, player_static, self.max_acceleration, self.max_speed, self.arrival_radius, self.slow_radius)
 
 class PatrolAction(Action):
@@ -142,26 +142,3 @@ class PlayerReachedDecision(Decision):
         distance: float = math.sqrt(dx*dx + dy*dy)
         return isinstance(self.false_node.make_decision(), Arrive) and distance <= self.arrival_radius
 
-class AttackAction(Action):
-    """
-    ### Description
-    An action that returns a string "attack".
-
-    ### Attributes
-    - `enemy`: dict
-        The enemy's position.
-    - `direction`: str
-        The direction the enemy is facing.
-    - `attack_sprites_right`: list
-        A list of sprites for the enemy facing right.
-    - `attack_sprites_left`: list
-        A list of sprites for the enemy facing left.
-    """
-    def __init__(self, enemy, direction: str, attack_sprites_right: List[str], attack_sprites_left: List[str]):
-        self.enemy = enemy
-        self.direction = direction
-        self.attack_sprites_right = attack_sprites_right
-        self.attack_sprites_left = attack_sprites_left
-        
-    def make_decision(self):
-        return "attack"

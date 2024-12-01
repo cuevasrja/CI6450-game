@@ -43,7 +43,7 @@ class FleeAction(Action):
         self.max_x: int = max_x
         
     def make_decision(self) -> Flee|None:
-        enemy_static: Static = Kinematic(Vector2(self.enemy["x"], self.enemy["y"]), 0)
+        enemy_static: Static = Kinematic(Vector2(self.enemy["x"], self.enemy["y"]), self.enemy["orientation"])
         
         player_static: Static = Static(Vector2(self.player[0], self.player[1]), 0)
         
@@ -63,10 +63,11 @@ class FleeAction(Action):
             steering: SteeringOutput = flee_behavior.get_steering()
             if steering:
                 new_x: int = self.enemy["x"] + steering.linear.x
+                new_y: int = self.enemy["y"] + steering.linear.y
                 # Limitate the enemy's movement to the screen width
                 if self.min_x <= new_x <= self.max_x:
                     self.enemy["x"] = new_x
-                    self.enemy["y"] = enemy_static.position.y
+                    self.enemy["y"] = new_y
                     
             return flee_behavior
         return None
