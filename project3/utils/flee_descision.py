@@ -1,3 +1,4 @@
+from typing import Dict, Tuple
 from utils.decision_tree import Action
 from utils.steering_output import SteeringOutput
 from utils.static import Static
@@ -12,9 +13,9 @@ class FleeAction(Action):
 
     ### Attributes
     - `enemy`: dict
-        The enemy's position.
+        The enemy's position and orientation.
     - `player`: tuple
-        The player's position.
+        The player's position and orientation.
     - `max_speed`: float
         The maximum speed of the enemy.
     - `max_distance`: float
@@ -32,7 +33,7 @@ class FleeAction(Action):
     - `make_decision() -> KinematicFlee|None`
         Returns a KinematicFlee object if the player is within the max distance.
     """
-    def __init__(self, enemy: Vector2, player: Vector2, max_speed: float, max_distance: float, screen_width: int, screen_height: int, min_x: int, max_x: int):
+    def __init__(self, enemy: Dict[str, float|int], player: Tuple[int, int, float], max_speed: float, max_distance: float, screen_width: int, screen_height: int, min_x: int, max_x: int):
         self.enemy: Vector2 = enemy
         self.player: Vector2 = player
         self.max_speed: float = max_speed

@@ -42,7 +42,6 @@ class Align:
 
         # Check if we are there, return no steering
         if rotationSize < self.targetRadius:
-            steering.angular = 0
             return steering
 
         targetRotation: float

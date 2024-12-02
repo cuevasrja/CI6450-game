@@ -2,6 +2,7 @@ import math
 from sqlite3 import Connection
 from typing import Dict, List
 import pygame, sys
+from utils.face import Face
 from utils.steering_output import SteeringOutput
 from utils.game import check_collision, draw_path, find_nearest_enemy, key_checker, test_player_in_range_and_zone
 from utils.game_graph import GameGraph
@@ -172,6 +173,7 @@ while True:
     key_checker(keys, player, player_history, MOVE_SPEED, dt, zoomed_world)
     player.set_orientation(atan2(player_history))
     player_history = normalize(player_history)
+    player_orientation = atan2(player_history)
     new_x = player.get_x()
     new_y = player.get_y()
 
@@ -251,7 +253,7 @@ while True:
     for i, enemy in enumerate(enemy_positions):
         if i == 0:
             # Persecution behavior
-            arrive_action = ArriveAction(enemy, (player.get_x(), player.get_y()), MAX_ACCELERATION, MAX_SPEED, ARRIVAL_RADIUS, SLOW_RADIUS)
+            arrive_action = ArriveAction(enemy, (player.get_x(), player.get_y(), player_orientation), MAX_ACCELERATION, MAX_SPEED, ARRIVAL_RADIUS, SLOW_RADIUS)
             # Patrol behavior
             patrol_action = PatrolAction(enemy, enemy_directions[i])
             
@@ -333,7 +335,7 @@ while True:
             # Flee behavior
             flee = FleeAction(
                 enemy,
-                (player.get_x(), player.get_y()),
+                (player.get_x(), player.get_y(), player_orientation),
                 ENEMY_FLEE_SPEED,
                 ENEMY_DETECTION_RADIUS,
                 WORLD_WIDTH,
@@ -402,7 +404,7 @@ while True:
             # Wander behavior
             wander = WanderAction(
                 enemy,
-                (player.get_x(), player.get_y()),
+                (player.get_x(), player.get_y(), player_orientation),
                 MAX_ANGULAR_ACCELERATION,
                 MAX_ROTATION,
                 TARGET_RADIUS,
@@ -417,7 +419,7 @@ while True:
             # Face behavior
             face = FaceAction(
                 enemy,
-                (player.get_x(), player.get_y()),
+                (player.get_x(), player.get_y(), player_orientation),
                 MAX_ANGULAR_ACCELERATION,
                 MAX_ROTATION,
                 TARGET_RADIUS,
@@ -428,8 +430,8 @@ while True:
             wander_decision = InRangeDecision(
                 (enemy["x"], enemy["y"]),
                 (player.get_x(), player.get_y()),
-                wander,
                 face,
+                wander,
                 lambda pos1, pos2: (
                     math.sqrt((pos2[0]-pos1[0])**2 + (pos2[1]-pos1[1])**2) <= ENEMY_DETECTION_RADIUS
                 )
@@ -449,33 +451,18 @@ while True:
                     new_y = enemy["y"] + steering.linear.y
 
                     # Limit the horizontal movement
-                    if ENEMY_FLEE_MIN <= new_x <= ENEMY_FLEE_MAX:
+                    if ENEMY_FLEE_MIN <= new_x <= ENEMY_FLEE_MAX and not check_collision(zoomed_world, new_x, new_y):
                         enemy["x"] = new_x
                         enemy["y"] = new_y
-                        enemy["orientation"] = steering.angular
-                    enemy_directions[i] = 'right' if steering.linear.x > 0 else 'left'
+                    enemy["orientation"] = steering.angular
+                    enemy_directions[i] = 'right' if math.cos(enemy["orientation"]) > 0 else 'left'
             # If the player is not in range, face
-            else:
-                enemy["orientation"] = 0 if enemy_directions[i] == 'right' else math.pi
-                # If direction is right, move right
-                if math.cos(enemy["orientation"]) > 0:
-                    new_x = enemy["x"] + ENEMY_SPEED
-                    # If the enemy is at the right limit, change direction
-                    if new_x > ENEMY_FLEE_MAX:
-                        enemy_directions[i] = 'left'
-                # If direction is left, move left
-                else:
-                    new_x = enemy["x"] - ENEMY_SPEED
-                    # If the enemy is at the left limit, change direction
-                    if new_x < ENEMY_FLEE_MIN:
-                        enemy_directions[i] = 'right'
-
-                # Check for collisions    
-                if check_collision(zoomed_world, new_x, enemy["y"]):
-                    enemy_directions[i] = 'left' if enemy_directions[i] == 'right' else 'right'
-                    enemy["orientation"] = math.pi if enemy["orientation"] == 0 else 0
-                else:
-                    enemy["x"] = new_x
+            elif isinstance(action, Face):
+                steering = action.get_steering()
+                if steering:
+                    enemy["orientation"] = steering.angular
+                    print(enemy["orientation"])
+                    enemy_directions[i] = 'right' if math.cos(steering.angular) > 0 else 'left'         
         
         # If the enemy is not attacking, animate the enemy
         if not enemy["is_attacking"]:

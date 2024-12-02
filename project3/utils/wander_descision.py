@@ -1,3 +1,4 @@
+from typing import Dict, Tuple
 from utils.decision_tree import Action
 from utils.steering_output import SteeringOutput
 from utils.static import Static
@@ -13,9 +14,9 @@ class WanderAction(Action):
 
     ### Attributes
     - `enemy`: dict
-        The enemy's position.
+        The enemy's position and orientation.
     - `player`: tuple
-        The player's position.
+        The player's position and orientation.
     - `maxAngularAcceleration`: float
         The maximum angular acceleration of the enemy.
     - `maxRotation`: float
@@ -38,9 +39,9 @@ class WanderAction(Action):
     - `make_decision() -> Wander|None`
         Returns a Wander object if the player is within the max distance.
     """
-    def __init__(self, enemy: Vector2, player: Vector2, maxAngularAcceleration: float, maxRotation: float, targetRadius: float, slowRadius: float, wanderOffset: float, wanderRadius: float, wanderRate: float, wanderOrientation: float, maxAcceleration: float):
-        self.enemy: Vector2 = enemy
-        self.player: Vector2 = player
+    def __init__(self, enemy: Dict[str, float|int], player: Tuple[int, int, float], maxAngularAcceleration: float, maxRotation: float, targetRadius: float, slowRadius: float, wanderOffset: float, wanderRadius: float, wanderRate: float, wanderOrientation: float, maxAcceleration: float):
+        self.enemy: Dict[str, float|int] = enemy
+        self.player: Tuple[int, int, float] = player
         self.max_angular_acceleration: float = maxAngularAcceleration
         self.max_rotation: float = maxRotation
         self.target_radius: float = targetRadius
@@ -53,7 +54,7 @@ class WanderAction(Action):
         
     def make_decision(self) -> Wander|None:
         enemy_static: Static = Kinematic(Vector2(self.enemy["x"], self.enemy["y"]), self.enemy["orientation"])
-        player_static: Static = Kinematic(Vector2(self.player[0], self.player[1]), 0)
+        player_static: Static = Kinematic(Vector2(self.player[0], self.player[1]), self.player[2])
         
         wander: Wander = Wander(
             enemy_static,
@@ -78,9 +79,9 @@ class FaceAction(Action):
 
     ### Attributes
     - `enemy`: dict
-        The enemy's position.
+        The enemy's position and orientation.
     - `player`: tuple
-        The player's position.
+        The player's position and orientation.
     - `maxAngularAcceleration`: float
         The maximum angular acceleration of the enemy.
     - `maxRotation`: float
@@ -94,9 +95,9 @@ class FaceAction(Action):
     - `make_decision() -> Face`
         Returns a Face object.
     """
-    def __init__(self, enemy: Vector2, player: Vector2, maxAngularAcceleration: float, maxRotation: float, targetRadius: float, slowRadius: float):
-        self.enemy: Vector2 = enemy
-        self.player: Vector2 = player
+    def __init__(self, enemy: Dict[str, float|int], player: Tuple[int, int, float], maxAngularAcceleration: float, maxRotation: float, targetRadius: float, slowRadius: float):
+        self.enemy: Dict[str, float|int] = enemy
+        self.player: Tuple[int, int, float] = player
         self.max_angular_acceleration: float = maxAngularAcceleration
         self.max_rotation: float = maxRotation
         self.target_radius: float = targetRadius
@@ -104,7 +105,7 @@ class FaceAction(Action):
         
     def make_decision(self) -> Face:
         enemy_static: Static = Kinematic(Vector2(self.enemy["x"], self.enemy["y"]), self.enemy["orientation"])
-        player_static: Static = Kinematic(Vector2(self.player[0], self.player[1]), 0)
+        player_static: Static = Kinematic(Vector2(self.player[0], self.player[1]), self.player[2])
         
         return Face(
             enemy_static,
