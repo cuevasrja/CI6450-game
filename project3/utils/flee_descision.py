@@ -33,7 +33,7 @@ class FleeAction(Action):
     - `make_decision() -> KinematicFlee|None`
         Returns a KinematicFlee object if the player is within the max distance.
     """
-    def __init__(self, enemy: Dict[str, float|int], player: Tuple[int, int, float], max_speed: float, max_distance: float, screen_width: int, screen_height: int, min_x: int, max_x: int):
+    def __init__(self, enemy: Dict[str, float|int], player: Tuple[int, int, float], max_speed: float, max_distance: float, screen_width: int, screen_height: int, min_x: int, max_x: int, active: bool = True):
         self.enemy: Vector2 = enemy
         self.player: Vector2 = player
         self.max_speed: float = max_speed
@@ -42,8 +42,11 @@ class FleeAction(Action):
         self.screen_height: int = screen_height
         self.min_x: int = min_x
         self.max_x: int = max_x
+        self.active: bool = active
         
     def make_decision(self) -> Flee|None:
+        if not self.active:
+            return None
         enemy_static: Static = Kinematic(Vector2(self.enemy["x"], self.enemy["y"]), self.enemy["orientation"])
         
         player_static: Static = Static(Vector2(self.player[0], self.player[1]), 0)

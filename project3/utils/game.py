@@ -1,8 +1,9 @@
 import math
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import pygame
 from utils.kinematic import Kinematic
 from utils.a_star import pathfind_astar
+from utils.tactical_a_star import pathfind_tactical_astar
 from utils.connection import Connection
 from utils.game_graph import GameGraph
 from utils.manhattan_heuristic import ManhattanHeuristic
@@ -67,6 +68,32 @@ def get_path(game_graph: GameGraph, block_size: int, start_x: int, start_y: int,
         return path
     return None
 
+def get_path_and_evade(game_graph: GameGraph, block_size: int, start: pygame.Vector2, end: pygame.Vector2, player: pygame.Vector2) -> List[Connection]:
+    """
+    ### Description
+    Get the path between two points using the A* algorithm and evade the enemies.
+
+    ### Parameters
+    - game_graph: The game graph.
+    - block_size: The size of a block.
+    - start: The start point.
+    - end: The end point.
+    - player: The player's position that the enemy should evade.
+
+    ### Returns
+    - The path between the two points
+    """
+    start_node = game_graph.nodes.get((start.x // block_size, start.y // block_size))
+    end_node = game_graph.nodes.get((end.x // block_size, end.y // block_size))
+
+    player_node = game_graph.nodes.get((player.x // block_size, player.y // block_size))
+    
+    if start_node and end_node:
+        heuristic = ManhattanHeuristic(end_node)
+        path = pathfind_tactical_astar(game_graph, start_node, end_node, heuristic, player_node)
+        return path
+    return
+
 # Movement zone for enemy 1
 ENEMY_MIN_X = 800
 ENEMY_MAX_X = 1300
@@ -101,7 +128,7 @@ def test_player_in_range_and_zone(enemy_pos: pygame.Vector2, player_pos: pygame.
     
     return in_range and in_zone
 
-def find_nearest_enemy(game_graph: GameGraph, block_size: int, player_x: int, player_y: int, enemy_positions: List[Dict[str, int|pygame.Surface]]) -> List[Connection]:
+def find_nearest_enemy(game_graph: GameGraph, block_size: int, player: pygame.Vector2, enemy_positions: List[pygame.Vector2]) -> List[Connection]:
     """
     ### Description
     Find the nearest enemy to the player.
@@ -121,7 +148,9 @@ def find_nearest_enemy(game_graph: GameGraph, block_size: int, player_x: int, pl
     target_enemy = None
 
     for enemy in enemy_positions:
-        path_to_enemy = get_path(game_graph, block_size, player_x, player_y, enemy["x"], enemy["y"])
+        if enemy is None:
+            continue
+        path_to_enemy = get_path(game_graph, block_size, player.x, player.y, enemy.x, enemy.y)
         if path_to_enemy:
             # Calculate distance to enemy
             distance = len(path_to_enemy)
@@ -132,7 +161,40 @@ def find_nearest_enemy(game_graph: GameGraph, block_size: int, player_x: int, pl
 
     return best_route, target_enemy
 
-def draw_path(screen: pygame.Surface, path: List[Connection], camera_x: int, camera_y: int, block_size: int) -> None:
+def find_nearest_blackhole_and_evade_colissions(game_graph: GameGraph, block_size: int, player: pygame.Vector2, blackhole_positions: List[Dict[str, int|pygame.Surface]], enemy: pygame.Vector2) -> List[Connection]:
+    """
+    ### Description
+    Find the nearest blackhole to the player and evade the player.
+
+    ### Parameters
+    - game_graph: The game graph.
+    - block_size: The size of a block.
+    - player: The player's position.
+    - blackhole_positions: The positions of the blackholes.
+    - enemy: The enemy's position.
+
+    ### Returns
+    - The path to the nearest blackhole and the target blackhole.
+    """
+    best_distance: float = float('inf')
+    best_route: List[Connection] = None
+    target_blackhole = None
+
+    for blackhole in blackhole_positions:
+        if blackhole is None:
+            continue
+        path_to_blackhole = get_path_and_evade(game_graph, block_size, player, pygame.Vector2(blackhole["x"], blackhole["y"]), enemy)
+        if path_to_blackhole:
+            # Calculate distance to blackhole
+            distance = len(path_to_blackhole)
+            if distance < best_distance:
+                best_distance = distance
+                best_route = path_to_blackhole
+                target_blackhole = blackhole
+
+    return best_route, target_blackhole
+
+def draw_path(screen: pygame.Surface, path: List[Connection], camera_x: int, camera_y: int, block_size: int, color: Tuple[int, int, int]|str = (255, 0, 0)) -> None:
     """
     ### Description
     Draw the path on the screen.
@@ -158,7 +220,7 @@ def draw_path(screen: pygame.Surface, path: List[Connection], camera_x: int, cam
             end_pos = (end.x * block_size - camera_x,
                       end.y * block_size - camera_y)
             
-            pygame.draw.line(screen, (255,0,0), start_pos, end_pos, 2)
+            pygame.draw.line(screen, color, start_pos, end_pos, 2)
 
 def check_experiment_collision(player_pos: pygame.Vector2, exp_pos: pygame.Vector2, threshold: int = 30) -> bool:
     """

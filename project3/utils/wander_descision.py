@@ -53,24 +53,25 @@ class WanderAction(Action):
         self.maxAcceleration: float = maxAcceleration
         
     def make_decision(self) -> Wander|None:
-        enemy_static: Static = Kinematic(Vector2(self.enemy["x"], self.enemy["y"]), self.enemy["orientation"])
-        player_static: Static = Kinematic(Vector2(self.player[0], self.player[1]), self.player[2])
+        # enemy_static: Static = Kinematic(Vector2(self.enemy["x"], self.enemy["y"]), self.enemy["orientation"])
+        # player_static: Static = Kinematic(Vector2(self.player[0], self.player[1]), self.player[2])
         
-        wander: Wander = Wander(
-            enemy_static,
-            player_static,
-            self.max_angular_acceleration,
-            self.max_rotation,
-            self.target_radius,
-            self.slowRadius,
-            self.wanderOffset,
-            self.wanderRadius,
-            self.wanderRate,
-            self.wanderOrientation,
-            self.maxAcceleration
-        )
+        # wander: Wander = Wander(
+        #     enemy_static,
+        #     player_static,
+        #     self.max_angular_acceleration,
+        #     self.max_rotation,
+        #     self.target_radius,
+        #     self.slowRadius,
+        #     self.wanderOffset,
+        #     self.wanderRadius,
+        #     self.wanderRate,
+        #     self.wanderOrientation,
+        #     self.maxAcceleration
+        # )
 
-        return wander
+        # return wander
+        return "find"
 
 class FaceAction(Action):
     """
