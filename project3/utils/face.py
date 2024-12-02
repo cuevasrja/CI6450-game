@@ -40,4 +40,6 @@ class Face(Align):
         self.target.set_orientation(atan2(direction))
 
         # Call the align behavior
-        return super().get_steering() 
+        align_output: SteeringOutput = super().get_steering()
+
+        return align_output

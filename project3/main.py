@@ -137,15 +137,15 @@ MAX_SPEED: int = 5
 MAX_ACCELERATION: int = 1
 
 # Wander behavior
-MAX_ANGULAR_ACCELERATION: int = 0.1
-MAX_ROTATION: int = 0.1
-TARGET_RADIUS: int = 10
-SLOW_RADIUS: int = 100
-WANDER_OFFSET: int = 100
-WANDER_RADIUS: int = 50
-WANDER_RATE: int = 0.3
-WANDER_ORIENTATION: int = 0
-MAX_ACCELERATION: int = 1
+MAX_ANGULAR_ACCELERATION: float = 2
+MAX_ROTATION: float = 2
+TARGET_RADIUS: float = 1
+SLOW_RADIUS: float = 10
+WANDER_OFFSET: float = 10
+WANDER_RADIUS: float = 5
+WANDER_RATE: float = 0.5
+WANDER_ORIENTATION: float = 0.5
+MAX_ACCELERATION: float = 1
 
 # Path Finding
 current_path: List[Connection]|None = None
@@ -458,10 +458,10 @@ while True:
                     enemy_directions[i] = 'right' if math.cos(enemy["orientation"]) > 0 else 'left'
             # If the player is not in range, face
             elif isinstance(action, Face):
+                print("Enemy orientation",enemy["orientation"])
                 steering = action.get_steering()
                 if steering:
                     enemy["orientation"] = steering.angular
-                    print(enemy["orientation"])
                     enemy_directions[i] = 'right' if math.cos(steering.angular) > 0 else 'left'         
         
         # If the enemy is not attacking, animate the enemy
