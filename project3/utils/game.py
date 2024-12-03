@@ -161,7 +161,7 @@ def find_nearest_enemy(game_graph: GameGraph, block_size: int, player: pygame.Ve
 
     return best_route, target_enemy
 
-def find_nearest_blackhole_and_evade_colissions(game_graph: GameGraph, block_size: int, player: pygame.Vector2, blackhole_positions: List[Dict[str, int|pygame.Surface]], enemy: pygame.Vector2) -> List[Connection]:
+def find_nearest_target_and_evade_obstacles(game_graph: GameGraph, block_size: int, player: pygame.Vector2, blackhole_positions: List[Dict[str, int|pygame.Surface]], enemy: pygame.Vector2) -> List[Connection]:
     """
     ### Description
     Find the nearest blackhole to the player and evade the player.
@@ -183,7 +183,7 @@ def find_nearest_blackhole_and_evade_colissions(game_graph: GameGraph, block_siz
     for blackhole in blackhole_positions:
         if blackhole is None:
             continue
-        path_to_blackhole = get_path_and_evade(game_graph, block_size, player, pygame.Vector2(blackhole["x"], blackhole["y"]), enemy)
+        path_to_blackhole = get_path_and_evade(game_graph, block_size, player, blackhole, enemy)
         if path_to_blackhole:
             # Calculate distance to blackhole
             distance = len(path_to_blackhole)

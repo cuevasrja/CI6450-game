@@ -4,17 +4,16 @@ from typing import Dict, List
 import pygame, sys
 from utils.face import Face
 from utils.steering_output import SteeringOutput
-from utils.game import check_collision, draw_path, find_nearest_enemy, key_checker, test_player_in_range_and_zone, find_nearest_blackhole_and_evade_colissions
+from utils.game import check_collision, draw_path, find_nearest_enemy, key_checker, test_player_in_range_and_zone, find_nearest_target_and_evade_obstacles
 from utils.game_graph import GameGraph
 from utils.arrive import Arrive
 from utils.arrive_descision import ArriveAction, PatrolAction, InRangeDecision, AttackAction, PlayerReachedDecision
 from utils.flee import Flee
 from utils.flee_descision import FleeAction
-from utils.drawer import draw_polygon, draw_polygon_by_class
+from utils.drawer import draw_polygon_by_class
 from utils.kinematic import Kinematic
 from utils.trigonometry import atan2, normalize
-from utils.wander import Wander
-from utils.wander_descision import FaceAction, WanderAction
+from utils.finder_descision import FaceAction, FinderAction
 
 # Initialize Pygame
 pygame.init()
@@ -94,9 +93,9 @@ scaled_black_hole: pygame.Surface = pygame.transform.scale(
 
 # Enemy positions
 enemy_positions: List[Dict[str, int|pygame.Surface]] = [
-    {"x": 1000, "y": 650, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False, "orientation": 0, "persecution": False},
-    {"x": 1300, "y": 200, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False, "orientation": 0, "persecution": False},
-    {"x": 500, "y": 200, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False, "orientation": 0, "persecution": False}
+    {"x": 1000, "y": 650, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False, "orientation": 0, "persecution": False, "fuel": 10, "charging": False},
+    {"x": 1300, "y": 200, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False, "orientation": 0, "persecution": False, "fuel": 10, "charging": False},
+    {"x": 500, "y": 200, "sprite": scaled_enemy_experiment, "sprites_right": enemyMoveRight, "sprites_left": enemyMoveLeft, "is_attacking": False, "orientation": 0, "persecution": False, "fuel": 10, "charging": False},
 ]
 
 # Black holes
@@ -137,11 +136,10 @@ MAX_ANGULAR_ACCELERATION: float = 2
 MAX_ROTATION: float = 2
 TARGET_RADIUS: float = 1
 SLOW_RADIUS: float = 10
-WANDER_OFFSET: float = 10
-WANDER_RADIUS: float = 5
-WANDER_RATE: float = 0.5
-WANDER_ORIENTATION: float = 0.5
 MAX_ACCELERATION: float = 1
+
+# FUEL
+FUEL_LIMIT: int = 100
 
 # Path Finding
 current_path: List[Connection]|None = None
@@ -375,7 +373,7 @@ while True:
             action = flee_decision.make_decision()
 
             # If the player is in range, flee
-            if isinstance(action, Flee) and not enemy["persecution"]:
+            if isinstance(action, Flee) and not enemy["persecution"] and enemy["fuel"] > 0 and not enemy["charging"]:
                 # Flee behavior
                 steering = action.get_steering()
 
@@ -391,7 +389,7 @@ while True:
                         enemy["orientation"] = steering.angular
                     enemy_directions[i] = 'right' if steering.linear.x > 0 else 'left'
             # If the player is not in range, patrol
-            elif action == "patrol" and not enemy["persecution"]:
+            elif action == "patrol" and not enemy["persecution"] and enemy["fuel"] > 0 and not enemy["charging"]:
                 enemy["orientation"] = 0 if enemy_directions[i] == 'right' else math.pi
                 # If direction is right, move right
                 if math.cos(enemy["orientation"]) > 0:
@@ -412,8 +410,32 @@ while True:
                     enemy["orientation"] = math.pi if enemy["orientation"] == 0 else 0
                 else:
                     enemy["x"] = new_x
+            elif enemy_positions[2]["fuel"] < FUEL_LIMIT and enemy["charging"]:
+                persec_path2, persec_exp2 = find_nearest_enemy(game_graph, block_size, pygame.Vector2(enemy["x"], enemy["y"]), [pygame.Vector2(enemy_positions[2]["x"], enemy_positions[2]["y"])])
+
+                if persec_path2 and len(persec_path2) > 0:
+                    next_node = persec_path2.pop(0).to_node
+                    target_x = next_node.x * block_size
+                    target_y = next_node.y * block_size
+
+                    dx = target_x - enemy["x"]
+                    dy = target_y - enemy["y"]
+                    dist = abs(dx) + abs(dy)
+
+                    if dist > 0:
+                        dx = dx/dist * MOVE_SPEED
+                        dy = dy/dist * MOVE_SPEED
+
+                        new_x = enemy["x"] + dx
+                        new_y = enemy["y"] + dy
+
+                        if not check_collision(zoomed_world, new_x, new_y):
+                            enemy["x"] = new_x
+                            enemy["y"] = new_y
+                else:
+                    enemy_positions[2]["fuel"] += 1
             else:
-                if not persec_path2:
+                if not persec_path2 or len(persec_path2) == 0:
                     persec_path2, persec_exp2 = find_nearest_enemy(game_graph, block_size, pygame.Vector2(enemy["x"], enemy["y"]), [pygame.Vector2(player.get_x(), player.get_y())])
             
                 if persec_path2 and len(persec_path2) > 0:
@@ -442,19 +464,10 @@ while True:
                     draw_path(SCREEN, current_tactical_path, camera_x, camera_y, block_size, (0, 255, 0))
                 
         elif i == 2:
-            # Wander behavior
-            wander = WanderAction(
+            # Finder behavior
+            finder = FinderAction(
                 enemy,
                 (player.get_x(), player.get_y(), player_orientation),
-                MAX_ANGULAR_ACCELERATION,
-                MAX_ROTATION,
-                TARGET_RADIUS,
-                SLOW_RADIUS,
-                WANDER_OFFSET,
-                WANDER_RADIUS,
-                WANDER_RATE,
-                WANDER_ORIENTATION,
-                MAX_ACCELERATION
             )
 
             # Face behavior
@@ -468,37 +481,21 @@ while True:
             )
 
             # In range decision
-            wander_decision = InRangeDecision(
+            finder_decision = InRangeDecision(
                 (enemy["x"], enemy["y"]),
                 (player.get_x(), player.get_y()),
                 face,
-                wander,
+                finder,
                 lambda pos1, pos2: (
                     math.sqrt((pos2[0]-pos1[0])**2 + (pos2[1]-pos1[1])**2) <= ENEMY_DETECTION_RADIUS
                 )
             )
 
             # Make decision
-            action = wander_decision.make_decision()
+            action = finder_decision.make_decision()
 
-            # If the player is in range, wander
-            if isinstance(action, Wander):
-                # Wander behavior
-                steering = action.get_steering()
-
-                # If the player is in range, wander
-                if steering:
-                    new_x = enemy["x"] + steering.linear.x
-                    new_y = enemy["y"] + steering.linear.y
-
-                    # Limit the horizontal movement
-                    if ENEMY_FLEE_MIN <= new_x <= ENEMY_FLEE_MAX and not check_collision(zoomed_world, new_x, new_y):
-                        enemy["x"] = new_x
-                        enemy["y"] = new_y
-                    enemy["orientation"] = steering.angular
-                    enemy_directions[i] = 'right' if math.cos(enemy["orientation"]) > 0 else 'left'
             # If the player is not in range, face
-            elif isinstance(action, Face):
+            if isinstance(action, Face):
                 normal_target_exp = None
                 tactical_target_exp = None
                 current_normal_path = None
@@ -508,8 +505,8 @@ while True:
                 if steering:
                     enemy["orientation"] = steering.angular
                     enemy_directions[i] = 'right' if math.cos(steering.angular) > 0 else 'left'
-            elif not enemy["persecution"]:
-                
+                    enemy["fuel"] += 1
+            elif not enemy["persecution"] and enemy["fuel"] > 0 and not enemy["charging"]:
                 nearest_black_hole = min(black_holes, key=lambda hole: math.sqrt((hole["x"] - enemy["x"])**2 + (hole["y"] - enemy["y"])**2) if hole is not None else float("inf"))
                 # Find the index of the nearest black hole
                 nearest_black_hole_index = black_holes.index(nearest_black_hole)
@@ -526,10 +523,10 @@ while True:
 
                 current_normal_path, normal_target_exp = find_nearest_enemy(game_graph, block_size, pygame.Vector2(enemy["x"], enemy["y"]), [pygame.Vector2(bh["x"], bh["y"]) for bh in black_holes if bh is not None])
                 if not current_tactical_path:
-                    current_tactical_path, tactical_target_exp = find_nearest_blackhole_and_evade_colissions(game_graph, 
+                    current_tactical_path, tactical_target_exp = find_nearest_target_and_evade_obstacles(game_graph, 
                                                                                                      block_size, 
                                                                                                      pygame.Vector2(enemy["x"], enemy["y"]), 
-                                                                                                     black_holes,
+                                                                                                     [pygame.Vector2(bh["x"], bh["y"]) for bh in black_holes if bh is not None],
                                                                                                      player.get_position()
                                                                                                     )
             
@@ -542,7 +539,7 @@ while True:
                     e_dy = target_y - enemy["y"]
                     e_dist = abs(e_dx) + abs(e_dy)
 
-                    if e_dist > 0:
+                    if e_dist >= 0:
                         e_dx = e_dx/e_dist * MOVE_SPEED
                         e_dy = e_dy/e_dist * MOVE_SPEED
 
@@ -552,10 +549,12 @@ while True:
                         if not check_collision(zoomed_world, new_enemy_x, new_enemy_y):
                             enemy["x"] = new_enemy_x
                             enemy["y"] = new_enemy_y
+                            enemy["fuel"] -= 1
                     draw_path(SCREEN, current_tactical_path, camera_x, camera_y, block_size, (0, 255, 0))
                 if current_normal_path:
                     draw_path(SCREEN, current_normal_path, camera_x, camera_y, block_size)
-            else: # Persecution behavior
+            # Persecution behavior
+            elif enemy["persecution"] and enemy["fuel"] > 0 and not enemy["charging"]:
                 # Persecute the player
                 enemy["is_attacking"] = False
                 # Find the path
@@ -580,7 +579,15 @@ while True:
                         if not check_collision(zoomed_world, new_x, new_y):
                             enemy["x"] += dx
                             enemy["y"] += dy
+                            enemy["fuel"] -= 1
                     draw_path(SCREEN, current_path, camera_x, camera_y, block_size, (0, 50, 50))
+            else:
+                enemy_positions[1]["charging"] = True
+                enemy["charging"] = True
+
+                if enemy["fuel"] >= FUEL_LIMIT:
+                    enemy["charging"] = False
+                    enemy_positions[1]["charging"] = False
         
         # If the enemy is not attacking, animate the enemy
         if not enemy["is_attacking"]:
