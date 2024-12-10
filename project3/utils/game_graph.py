@@ -34,7 +34,7 @@ class GameGraph(Graph):
         # Create nodes for walkable tiles
         for y in range(height):
             for x in range(width):
-                if not self.is_wall(x, y):
+                if not self.is_wall(x, y) and not self.has_obstacle(x, y):
                     node: TileNode = TileNode(x, y)
                     self.nodes[(x, y)] = node
                     
@@ -52,6 +52,30 @@ class GameGraph(Graph):
             return 0 < color[0] and 0 < color[1] and 0 < color[2]
         except IndexError:
             return True
+        
+    def has_obstacle(self, x: int, y: int) -> bool:
+        """
+        ### Description
+        Returns whether a block has an obstacle.
+
+        ### Parameters
+        - `x: int`: The x-coordinate of the center of the block.
+        - `y: int`: The y-coordinate of the center of the block.
+
+        ### Returns
+        - `bool`: Whether the block has an obstacle.
+        """
+        # Check if there are any obstacle in the block
+        for dy in range(-self.block_size//2, self.block_size//2 + 1):
+            for dx in range(-self.block_size//2, self.block_size//2 + 1):
+                pixel_x: int = x * self.block_size + dx
+                pixel_y: int = y * self.block_size + dy
+                try:
+                    color: List[int] = self.surface.get_at((pixel_x, pixel_y))
+                    if 0 < color[0] and 0 < color[1] and 0 < color[2]:
+                        return True
+                except IndexError:
+                    return True
     
     def add_connections_for_tile(self, x: int, y: int):
         directions: List[Tuple[int, int]] = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # N, E, S, W

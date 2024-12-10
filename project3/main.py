@@ -373,7 +373,7 @@ while True:
             action = flee_decision.make_decision()
 
             # If the player is in range, flee
-            if isinstance(action, Flee) and not enemy["persecution"] and enemy["fuel"] > 0 and not enemy["charging"]:
+            if isinstance(action, Flee) and not enemy["persecution"] and not enemy["charging"]:
                 # Flee behavior
                 steering = action.get_steering()
 
@@ -389,7 +389,7 @@ while True:
                         enemy["orientation"] = steering.angular
                     enemy_directions[i] = 'right' if steering.linear.x > 0 else 'left'
             # If the player is not in range, patrol
-            elif action == "patrol" and not enemy["persecution"] and enemy["fuel"] > 0 and not enemy["charging"]:
+            elif action == "patrol" and not enemy["persecution"] and not enemy["charging"]:
                 enemy["orientation"] = 0 if enemy_directions[i] == 'right' else math.pi
                 # If direction is right, move right
                 if math.cos(enemy["orientation"]) > 0:
@@ -414,7 +414,7 @@ while True:
                 persec_path2, persec_exp2 = find_nearest_enemy(game_graph, block_size, pygame.Vector2(enemy["x"], enemy["y"]), [pygame.Vector2(enemy_positions[2]["x"], enemy_positions[2]["y"])])
 
                 if persec_path2 and len(persec_path2) > 0:
-                    next_node = persec_path2.pop(0).to_node
+                    next_node = persec_path2[0].to_node
                     target_x = next_node.x * block_size
                     target_y = next_node.y * block_size
 
@@ -432,14 +432,21 @@ while True:
                         if not check_collision(zoomed_world, new_x, new_y):
                             enemy["x"] = new_x
                             enemy["y"] = new_y
-                else:
+                    draw_path(SCREEN, persec_path2, camera_x, camera_y, block_size, (0, 50, 50))
+
+                # Calculate if the player is around the black hole
+                enemy_block_x = enemy["x"] // block_size
+                enemy_block_y = enemy["y"] // block_size
+
+                enemy2_block_x = enemy_positions[2]["x"] // block_size
+                enemy2_block_y = enemy_positions[2]["y"] // block_size
+                if (enemy_block_x == enemy2_block_x and enemy_block_y == enemy2_block_y):
                     enemy_positions[2]["fuel"] += 1
             else:
-                if not persec_path2 or len(persec_path2) == 0:
-                    persec_path2, persec_exp2 = find_nearest_enemy(game_graph, block_size, pygame.Vector2(enemy["x"], enemy["y"]), [pygame.Vector2(player.get_x(), player.get_y())])
+                persec_path2, persec_exp2 = find_nearest_enemy(game_graph, block_size, pygame.Vector2(enemy["x"], enemy["y"]), [pygame.Vector2(player.get_x(), player.get_y())])
             
                 if persec_path2 and len(persec_path2) > 0:
-                    next_node_tactical = persec_path2.pop(0).to_node
+                    next_node_tactical = persec_path2[0].to_node
                     target_x = next_node_tactical.x * block_size
                     target_y = next_node_tactical.y * block_size
 
@@ -461,7 +468,7 @@ while True:
                             enemy["x"] -= e_dx
                             enemy["y"] -= e_dy
                             current_tactical_path = None
-                    draw_path(SCREEN, current_tactical_path, camera_x, camera_y, block_size, (0, 255, 0))
+                    draw_path(SCREEN, persec_path2, camera_x, camera_y, block_size, (0, 255, 0))
                 
         elif i == 2:
             # Finder behavior
@@ -580,7 +587,7 @@ while True:
                             enemy["x"] += dx
                             enemy["y"] += dy
                             enemy["fuel"] -= 1
-                    draw_path(SCREEN, current_path, camera_x, camera_y, block_size, (0, 50, 50))
+                    draw_path(SCREEN, persec_path, camera_x, camera_y, block_size, (0, 50, 50))
             else:
                 enemy_positions[1]["charging"] = True
                 enemy["charging"] = True
